@@ -42,12 +42,19 @@ On failure, a short, actionable English notice is shown and details go to the Ob
 
 ## Manual Installation
 
-The private repository is not published to the Obsidian community marketplace; install manually:
+The private repository is not published to the Obsidian community marketplace; install via either option:
+
+**Option A: GitHub Release download (v0.1.1)**
+
+1. Open the repository's Releases page and download `main.js` and `manifest.json` from v0.1.1.
+2. Open your vault folder and go to `.obsidian/plugins/` (create it if missing).
+3. Create a folder named `vault-powershell/` and copy the downloaded files into it (also `styles.css` if present).
+4. In Obsidian settings → Community plugins, enable **Vault PowerShell**.
+
+**Option B: Build from source**
 
 1. Run `npm run build` in the project root (or use the committed `main.js`).
-2. Open your vault folder and go to `.obsidian/plugins/` (create it if missing).
-3. Create a folder named `vault-powershell/` and copy `main.js` and `manifest.json` into it (also `styles.css` if present).
-4. In Obsidian settings → Community plugins, enable **Vault PowerShell**.
+2. Same as Option A steps 2–4: copy the artifacts into `.obsidian/plugins/vault-powershell/` and enable the plugin.
 
 ## Building from Source
 

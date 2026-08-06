@@ -6,7 +6,7 @@
 
 - 轻量 Windows 桌面 Obsidian 插件：点击左侧 Ribbon 按钮，打开本机 PowerShell 7+（`pwsh.exe`），初始工作目录为当前 vault 根目录。
 - 唯一入口是 Ribbon 按钮。禁止添加命令面板命令、快捷键、设置页、右键菜单、内嵌终端、自动执行脚本。
-- 插件 ID：`vault-powershell`；主类：`VaultPowerShellPlugin`；当前版本 `0.1.0`；仓库 Private，默认分支 `main`。
+- 插件 ID：`vault-powershell`；主类：`VaultPowerShellPlugin`；当前版本 `0.1.1`；仓库 Private，默认分支 `main`。
 
 ## 硬性约束（不可违反）
 
