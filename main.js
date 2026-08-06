@@ -132,18 +132,35 @@ function parseMajorVersion(rawOutput) {
 
 // src/powershell/launcher.ts
 var import_node_child_process2 = require("node:child_process");
-function launchInteractive(verified, vaultPath) {
+var WINDOWS_TERMINAL = "wt.exe";
+function spawnDirect(verified, vaultPath) {
+  return spawnPwsh(
+    verified.path,
+    ["-WorkingDirectory", vaultPath],
+    vaultPath,
+    "inherit"
+  );
+}
+function spawnHosted(verified, vaultPath) {
+  return spawnPwsh(
+    WINDOWS_TERMINAL,
+    ["-w", "0", verified.path, "-WorkingDirectory", vaultPath],
+    vaultPath,
+    "ignore"
+  );
+}
+function spawnPwsh(executable, args, vaultPath, stdio) {
   return new Promise((resolve) => {
     let settled = false;
     let child;
     try {
-      child = (0, import_node_child_process2.spawn)(verified.path, ["-WorkingDirectory", vaultPath], {
+      child = (0, import_node_child_process2.spawn)(executable, args, {
         cwd: vaultPath,
         env: process.env,
         shell: false,
         windowsHide: false,
         detached: false,
-        stdio: "inherit"
+        stdio
       });
     } catch (error) {
       resolve({ ok: false, code: "UNKNOWN", error });
@@ -170,6 +187,20 @@ function launchInteractive(verified, vaultPath) {
       resolve({ ok: true, pid: (_a = child.pid) != null ? _a : 0 });
     });
     child.unref();
+  });
+}
+function launchInteractive(verified, vaultPath) {
+  if (vaultPath.includes(";")) {
+    return spawnDirect(verified, vaultPath);
+  }
+  return spawnHosted(verified, vaultPath).then((outcome) => {
+    if (outcome.ok) {
+      return outcome;
+    }
+    if (outcome.code === "ENOENT") {
+      return spawnDirect(verified, vaultPath);
+    }
+    return outcome;
   });
 }
 

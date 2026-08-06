@@ -13,13 +13,14 @@ Vault PowerShell 是一个轻量级 Obsidian 桌面插件，只提供一个 Ribb
 ## 功能
 
 - Obsidian 左侧 Ribbon 按钮（Lucide `terminal` 图标，tooltip：`Open PowerShell at vault root`）。
-- 只直接创建经过验证的 `pwsh.exe` 进程；不调用 `powershell.exe`、`cmd.exe`、`wt.exe`、`conhost.exe`、`start`、WSL、Git Bash 或其他 Shell/终端程序。
+- 只启动经过版本验证的 `pwsh.exe`；正式会话默认以 Windows Terminal（`wt.exe`）作为控制台窗口宿主（仅宿主用途，用户已授权）。不调用 `powershell.exe`、`cmd.exe`、`conhost.exe`、`start`、WSL、Git Bash 或其他 Shell/终端程序，不使用 `shell: true`。
 - PowerShell 查找顺序：
   1. `pwsh.exe`（由 Windows 使用 Obsidian 进程继承的 `PATH` 解析）
   2. `%ProgramFiles%\PowerShell\7\pwsh.exe`
   3. `%USERPROFILE%\.dotnet\tools\pwsh.exe`
 - 对每个候选执行隐藏的版本探测（`-NoLogo -NoProfile -NonInteractive -Command $PSVersionTable.PSVersion.Major`，无窗口、5 秒超时、只接受退出码 0、输出必须是可解析且 ≥ 7 的整数）。PowerShell 6 会被拒绝。
-- 版本验证通过后，直接启动同一个 `pwsh.exe` 正式会话：不附加 `-NoProfile`/`-NonInteractive`/`-Command`，用户 Profile 正常加载，不自动执行任何命令。
+- 版本验证通过后，通过 Windows Terminal（`wt.exe`，仅作为控制台窗口宿主）启动同一个 `pwsh.exe` 正式会话：不附加 `-NoProfile`/`-NonInteractive`/`-Command`，用户 Profile 正常加载，不自动执行任何命令。`wt.exe` 缺失或 vault 路径含 `;` 时自动回退直接启动 `pwsh.exe`。
+  > 背景：从资源管理器启动的 Obsidian（无控制台的 GUI 进程）直接 `spawn` 时，pwsh 无法获得可交互控制台句柄会立即退出（v0.1 实测闪退）；以 Windows Terminal 作为窗口宿主后 pwsh 获得真实控制台句柄，完全可交互（已实测，详见 MANUAL_TESTS.md）。本变更经用户明确授权，且仅限宿主用途：插件不代理、不监听、不记录任何输入输出。
 - vault 路径通过 `-WorkingDirectory` 独立参数传递，同时把子进程 `cwd` 设为 vault 根目录；路径不会被拼进任何命令字符串，兼容空格、中文、`&`、括号、单引号等特殊字符。
 - 内存缓存已验证的 `pwsh.exe` 路径与主版本号（仅存在于内存，重启 Obsidian 后重新验证）；正式启动发生 `ENOENT` 时清除缓存并重试一次。
 - 查找期间有“解析中”单飞锁，快速双击不会产生多个并行探测；缓存就绪后每次单击都打开一个新会话，无冷却时间。
@@ -79,7 +80,8 @@ npm run verify  # lint + typecheck + test + build 全量验证
 
 - 插件只提供 Ribbon 按钮：没有命令面板命令、快捷键、设置页、右键菜单或内嵌终端。
 - 仅支持 Windows；仅支持 PowerShell 7+；不支持 5.1。
-- 插件只能直接创建 `pwsh.exe`，不得调用其他 Shell、终端程序或 `shell: true`。**平台行为发现**（详见 `MANUAL_TESTS.md`）：当 Obsidian 从资源管理器启动（无控制台的 GUI 进程）时，Windows 不会把新控制台的标准句柄交给由 Node.js `spawn` 直接创建的子进程，`pwsh` 会因标准输入不可用而立即退出；从终端启动 Obsidian 时，`pwsh` 会附加到同一控制台并完全可交互。这是直接进程创建与 GUI 父进程之间的平台行为限制，插件未用任何被禁止的程序绕过。若您需要从资源管理器启动的 Obsidian 中可靠获得独立新窗口，请知悉此限制。
+- 正式会话默认以 Windows Terminal（`wt.exe`）作为控制台窗口宿主（用户授权的约束变更，v0.1 直连方案实测会闪退）；`wt.exe` 缺失时回退为直接启动 `pwsh.exe`（从终端启动 Obsidian 时可用）。插件始终不调用 `cmd.exe`、`powershell.exe`、`conhost.exe`、`start` 或 `shell: true`。
+- **含 `;` 的 vault 路径**不受支持（Windows Terminal 会把分号当作命令分隔符，实测确认）；此类路径自动回退为直接启动 `pwsh.exe`。其他特殊字符（空格、`&`、括号、单引号、中文）均已实测安全。
 - 仓库当前为 **Private**，没有发布到 Obsidian 社区市场；私有仓库版本主要通过手动复制构建产物安装。
 
 ## 开发命令
@@ -105,7 +107,7 @@ npm run verify  # lint + typecheck + test + build 全量验证
 `Implementation completed; manual Windows verification pending`
 
 - 代码、构建与自动化测试已完成；Windows 上的进程创建行为已通过脚本化实验验证（详见 `MANUAL_TESTS.md` 的“平台行为发现”）。
-- 尚未在真实 Obsidian GUI 中点击 Ribbon 完成人工验收，`MANUAL_TESTS.md` 中的“未执行”项待完成。
+- 用户在真实 Obsidian 中实测 v0.1 直连版确认闪退；wt 宿主修复版（v0.1.1 工作区版本）已交付，待用户重新人工验收（`.test-vault`）。
 
 ## License
 

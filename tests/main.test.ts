@@ -122,19 +122,19 @@ describe('VaultPowerShellPlugin', () => {
     expect(spawnState.spawns).toHaveLength(0);
   });
 
-  it('launches the verified pwsh at the vault root without a success notice', async () => {
+  it('launches through Windows Terminal at the vault root without a success notice', async () => {
     const plugin = makePlugin();
     await plugin.openPowerShell();
     expect(state.notices).toHaveLength(0);
     expect(spawnState.spawns).toHaveLength(1);
     const [file, args, options] = spawnState.spawns[0];
-    expect(file).toBe(PWSH);
-    expect(args).toEqual(['-WorkingDirectory', VAULT]);
+    expect(file).toBe('wt.exe');
+    expect(args).toEqual(['-w', '0', PWSH, '-WorkingDirectory', VAULT]);
     expect(options.cwd).toBe(VAULT);
     expect(options.shell).toBe(false);
   });
 
-  it('clears the cache and retries exactly once after an ENOENT launch failure', async () => {
+  it('falls back to the direct pwsh spawn when wt.exe is missing', async () => {
     const probe = vi.fn().mockResolvedValue(7);
     const plugin = makePlugin({
       finder: {
@@ -142,17 +142,17 @@ describe('VaultPowerShellPlugin', () => {
         probeMajorVersion: probe,
       },
     });
-    spawnState.failSpawnCount = 1;
+    spawnState.failSpawnCount = 1; // wt.exe ENOENT -> launcher falls back
     await plugin.openPowerShell();
-    // One failed launch + one retry launch.
-    expect(spawnState.spawns).toHaveLength(2);
     expect(state.notices).toHaveLength(0);
-    // The cache was cleared and the executable re-verified exactly once.
-    expect(probe).toHaveBeenCalledTimes(2);
+    expect(spawnState.spawns).toHaveLength(2);
+    expect(spawnState.spawns[0][0]).toBe('wt.exe');
     expect(spawnState.spawns[1][0]).toBe(PWSH);
+    // The pwsh cache is untouched by a missing wt.exe.
+    expect(probe).toHaveBeenCalledTimes(1);
   });
 
-  it('shows the start-failed notice when the retry launch also fails', async () => {
+  it('clears the cache and retries exactly once when both wt and pwsh fail with ENOENT', async () => {
     const probe = vi.fn().mockResolvedValue(7);
     const plugin = makePlugin({
       finder: {
@@ -160,9 +160,28 @@ describe('VaultPowerShellPlugin', () => {
         probeMajorVersion: probe,
       },
     });
-    spawnState.failSpawnCount = 2;
+    spawnState.failSpawnCount = 2; // wt ENOENT + fallback pwsh ENOENT
     await plugin.openPowerShell();
-    expect(spawnState.spawns).toHaveLength(2); // initial + retry, never a third
+    // First click: wt + fallback pwsh. Cache cleared, one re-verify, second
+    // click: wt again (succeeds this time).
+    expect(spawnState.spawns).toHaveLength(3);
+    expect(probe).toHaveBeenCalledTimes(2);
+    expect(state.notices).toHaveLength(0);
+    expect(spawnState.spawns[2][0]).toBe('wt.exe');
+  });
+
+  it('shows the start-failed notice when the retry also fails', async () => {
+    const probe = vi.fn().mockResolvedValue(7);
+    const plugin = makePlugin({
+      finder: {
+        buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
+        probeMajorVersion: probe,
+      },
+    });
+    spawnState.failSpawnCount = 4; // every spawn in both attempts fails
+    await plugin.openPowerShell();
+    // Attempt 1: wt + fallback pwsh. Attempt 2 (retry): wt + fallback pwsh.
+    expect(spawnState.spawns).toHaveLength(4);
     expect(probe).toHaveBeenCalledTimes(2);
     expect(state.notices).toEqual([
       'PowerShell could not be started. Check the developer console for details.',
@@ -177,9 +196,9 @@ describe('VaultPowerShellPlugin', () => {
         probeMajorVersion: probe,
       },
     });
-    spawnState.failSpawnCount = 1;
+    spawnState.failSpawnCount = 2; // wt + pwsh both ENOENT on the first click
     await plugin.openPowerShell();
-    expect(spawnState.spawns).toHaveLength(1);
+    expect(spawnState.spawns).toHaveLength(2);
     expect(probe).toHaveBeenCalledTimes(2);
     expect(state.notices).toEqual([
       'PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.',

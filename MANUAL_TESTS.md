@@ -5,11 +5,12 @@
 ## 当前状态
 
 ```
-Manual Windows verification: not performed
+Manual Windows verification: partially performed (user clicked v0.1 in real Obsidian)
 ```
 
-- 真实 Obsidian GUI（点击 Ribbon）验收：**未执行**（not performed）。本环境未安装可用于点击验收的 Obsidian GUI 会话，且不得擅自启动/修改用户环境。
-- 脚本化 Windows 平台实验：**已执行**（2026-08-06，Windows 桌面会话 + pwsh 7.6.4 MSIX + Node 24.16.0），结论见下文“平台行为发现”。
+- 真实 Obsidian GUI 验收：**部分执行**。用户于 2026-08-08 在真实 Obsidian 中点击 Ribbon，确认 v0.1 直连版本**窗口闪退**（与平台行为发现一致）。
+- 修复版（wt.exe 宿主）已交付，**待用户重新验收**（`.test-vault`）。
+- 脚本化 Windows 平台实验：已执行（2026-08-06/08，Windows 桌面会话 + pwsh 7.6.4 MSIX + Node 24.16.0），结论见下。
 - 不得将自动化测试或脚本化实验描述为真实窗口验证。
 
 ## 人工验收步骤（准备）
@@ -45,6 +46,9 @@ Manual Windows verification: not performed
 | 19 | 含单引号路径 | 如 `E:\It's vault` | 正常 | 未执行 |
 | 20 | 其他盘符 | 如 `D:\Vault` | 正常 | 未执行 |
 | 21 | UNC 路径 | 系统与 PowerShell 支持的情况下 | 尽力验证并记录结果 | 未执行 |
+| 22 | wt 宿主窗口（修复版） | 点击 Ribbon（Windows Terminal 已安装） | 出现新的 WT 窗口且 pwsh 不闪退 | **待用户重测** |
+| 23 | wt 缺失回退 | 临时移除 wt 或 PATH 中无 wt | 回退直连（终端启动场景可用） | 未执行 |
+| 24 | 含 `;` 路径 vault | 路径含分号（罕见） | 回退直连，行为与 v0.1 相同 | 未执行 |
 
 ## 平台行为发现（脚本化实验，2026-08-06）
 
@@ -56,6 +60,8 @@ Manual Windows verification: not performed
 | `'inherit'` | INVALID_HANDLE_VALUE（libuv：无效 fd ≤ 2 时传 INVALID；`STARTF_USESTDHANDLES` 恒置位） | 否（无控制台父进程时） | `IsInputRedirected=True`；交互式 pwsh **立即退出**（exit 0） |
 | `'pipe'` / `stdio: []` | 管道（Node 对缺失项补默认 pipe） | 否 | pwsh 挂起等待管道输入，不可交互；Obsidian 退出后管道 EOF 会终止 pwsh |
 | `'inherit'`（父进程有控制台时） | 真实控制台句柄 | **是** | pwsh 附加到父进程控制台，`IsInputRedirected=False`，完全可交互（但不产生新窗口） |
+| `conhost.exe pwsh …` | — | 不可用 | **参数丢失**：conhost 只取第一个 token 作为目标程序，pwsh 以无参数启动（实测 pwsh 命令行完全为空） |
+| `wt.exe` 宿主（`-w 0 pwsh -WorkingDirectory <路径>`） | 真实控制台句柄（ConPTY） | **是** | 从无控制台（DETACHED 模拟）父进程实测：`IsInputRedirected=False`，`-WorkingDirectory` 正确送达含空格/`&`/括号/单引号/中文路径，pwsh 存活且独立于父进程；**唯一限制：路径含 `;` 会被 wt 拆分**（`-WorkingDirectory` 与 `-d` 均无效），此类路径回退直连 |
 
 补充事实：
 
@@ -65,12 +71,10 @@ Manual Windows verification: not performed
 
 ### 结论与当前代码状态
 
-- **当前实现**：正式会话使用 `spawn(verifiedPwsh, ['-WorkingDirectory', vaultPath], { cwd: vaultPath, stdio: 'inherit', windowsHide: false, detached: false, shell: false })`。这是不违反“只直接创建 `pwsh.exe`”约束下的最优选择：
-  - Obsidian 从终端启动（开发场景）：pwsh 附加到同一控制台，**完全可交互**（已实测）。
-  - Obsidian 从资源管理器启动（常规场景）：pwsh 标准句柄不可用，**会立即退出**；这是直接进程创建 + GUI 父进程的平台行为限制。
-- **失败原因**：Node.js/libuv 的 `spawn` 总是显式传递标准句柄（管道/NUL/INVALID），不存在“让操作系统自动附加新控制台句柄”的模式；而 `powershell.exe`、`wt.exe`、`conhost.exe`、`start`、`shell: true` 等被项目硬性禁止。
-- **约束与平台行为之间的冲突**：规范要求“新的、可见的、可交互的 PowerShell 窗口”，而仅直接创建 `pwsh.exe`（无控制台 GUI 父进程 + Node spawn）无法让 pwsh 获得可交互的标准句柄。插件没有用任何被禁止的程序绕过，如实报告。
-- 若未来放宽约束（例如允许显式 `CREATE_NEW_CONSOLE` 或 ShellExecute 语义），可在不改变插件其余设计的前提下替换 `launcher.ts`。
+- **当前实现（2026-08-08，用户授权变更后）**：正式会话默认通过 `spawn('wt.exe', ['-w','0', verifiedPwsh, '-WorkingDirectory', vaultPath], { cwd: vaultPath, stdio: 'ignore', windowsHide: false, detached: false, shell: false })` 启动——Windows Terminal 只作为控制台窗口宿主，让 pwsh 获得真实控制台句柄（实测 `IsInputRedirected=False`，完全可交互）。`wt.exe` 缺失（ENOENT）或 vault 路径含 `;` 时回退直连 `spawn(pwsh, …, stdio:'inherit')`。
+- **变更原因**：v0.1 直连方案在 Explorer 启动的 Obsidian（无控制台 GUI 父进程）下被用户实测确认闪退；根因是 libuv 恒设 `STARTF_USESTDHANDLES` 并显式传无效句柄，Node `spawn` 不存在“让 OS 自动附加新控制台句柄”的模式。
+- **授权范围**：用户 2026-08-08 明确接受“放宽约束换取可靠新窗口”的建议；变更仅限于把 `wt.exe` 作为窗口宿主（不代理/监听/记录 I/O，vault 路径仍为独立 `-WorkingDirectory` 参数）。`cmd.exe`、`powershell.exe`、`conhost.exe`、`start`、`shell:true` 等仍被禁止。
+- 若未来约束再次收紧，可在不改变插件其余设计的前提下替换 `launcher.ts`。
 
 ## 记录格式
 

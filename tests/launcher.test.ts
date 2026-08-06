@@ -14,60 +14,132 @@ class FakeChild extends EventEmitter {
 }
 
 const VAULT = "E:\\My Vault (x) & 'y' 中文";
+const VAULT_SEMICOLON = 'E:\\Odd;Vault';
+const PWSH = 'C:\\Program Files\\PowerShell\\7\\pwsh.exe';
 
-function mockSpawn(behavior: 'spawn' | 'enoent' | 'unknown-error'): FakeChild {
-  const child = new FakeChild();
-  spawnMock.mockReturnValue(child);
-  setImmediate(() => {
-    if (behavior === 'spawn') {
-      child.emit('spawn');
-    } else {
-      const error = new Error(behavior) as NodeJS.ErrnoException;
-      error.code = behavior === 'enoent' ? 'ENOENT' : 'EACCES';
-      child.emit('error', error);
-    }
+type SpawnCall = [string, string[], Record<string, unknown>];
+
+/** Queue spawn results: each entry is 'spawn' (success) or an error code. */
+function mockSpawns(behaviors: Array<'spawn' | 'ENOENT' | 'EACCES'>): FakeChild[] {
+  const children: FakeChild[] = [];
+  spawnMock.mockImplementation(() => {
+    const child = new FakeChild();
+    children.push(child);
+    const index = children.length - 1;
+    setImmediate(() => {
+      const behavior = behaviors[Math.min(index, behaviors.length - 1)];
+      if (behavior === 'spawn') {
+        child.emit('spawn');
+      } else {
+        const error = new Error(behavior) as NodeJS.ErrnoException;
+        error.code = behavior;
+        child.emit('error', error);
+      }
+    });
+    return child;
   });
-  return child;
+  return children;
 }
 
-describe('launchInteractive', () => {
+function calls(): SpawnCall[] {
+  return spawnMock.mock.calls as unknown as SpawnCall[];
+}
+
+describe('launchInteractive — hosted mode via Windows Terminal', () => {
   beforeEach(() => {
     spawnMock.mockReset();
   });
 
-  it('spawns only the verified pwsh.exe', async () => {
-    mockSpawn('spawn');
-    const outcome = await launchInteractive({ path: 'C:\\Verified\\pwsh.exe', majorVersion: 7 }, VAULT);
+  it('spawns wt.exe with the verified pwsh and the vault path as its own -WorkingDirectory argument', async () => {
+    mockSpawns(['spawn']);
+    const outcome = await launchInteractive({ path: PWSH, majorVersion: 7 }, VAULT);
     expect(outcome).toEqual({ ok: true, pid: 4242 });
     expect(spawnMock).toHaveBeenCalledTimes(1);
-    expect(spawnMock.mock.calls[0][0]).toBe('C:\\Verified\\pwsh.exe');
+    const [file, args, options] = calls()[0];
+    expect(file).toBe('wt.exe');
+    expect(args).toEqual(['-w', '0', PWSH, '-WorkingDirectory', VAULT]);
+    expect(options.cwd).toBe(VAULT);
+    expect(options.shell).toBe(false);
+    expect(options.windowsHide).toBe(false);
+    expect(options.detached).toBe(false);
   });
 
-  it('passes the vault path as its own -WorkingDirectory argument and sets cwd', async () => {
-    mockSpawn('spawn');
-    await launchInteractive({ path: 'C:\\pwsh.exe', majorVersion: 7 }, VAULT);
-    const [, args, options] = spawnMock.mock.calls[0] as [
-      string,
-      string[],
-      Record<string, unknown>,
-    ];
+  it('never passes -NoProfile, -NonInteractive or -Command in the real session', async () => {
+    mockSpawns(['spawn']);
+    await launchInteractive({ path: PWSH, majorVersion: 7 }, VAULT);
+    const [, args] = calls()[0];
+    expect(args).not.toContain('-NoProfile');
+    expect(args).not.toContain('-NonInteractive');
+    expect(args).not.toContain('-Command');
+    expect(args).toContain('-WorkingDirectory');
+    expect(args).toContain(VAULT);
+  });
+
+  it('does not auto-run scripts', async () => {
+    mockSpawns(['spawn']);
+    await launchInteractive({ path: PWSH, majorVersion: 7 }, VAULT);
+    const [, args] = calls()[0];
+    for (const arg of args) {
+      expect(arg).not.toMatch(/\.(ps1|cmd|bat)$/i);
+    }
+  });
+
+  it('unrefs the host child so Obsidian does not wait for the session', async () => {
+    const children = mockSpawns(['spawn']);
+    await launchInteractive({ path: PWSH, majorVersion: 7 }, VAULT);
+    expect(children[0].unref).toHaveBeenCalled();
+  });
+
+  it('falls back to the direct pwsh spawn when wt.exe is missing', async () => {
+    mockSpawns(['ENOENT', 'spawn']);
+    const outcome = await launchInteractive({ path: PWSH, majorVersion: 7 }, VAULT);
+    expect(outcome.ok).toBe(true);
+    expect(spawnMock).toHaveBeenCalledTimes(2);
+    expect(calls()[0][0]).toBe('wt.exe');
+    const [file, args, options] = calls()[1];
+    expect(file).toBe(PWSH);
     expect(args).toEqual(['-WorkingDirectory', VAULT]);
     expect(options.cwd).toBe(VAULT);
-    // The vault path must never be embedded in a command string:
-    // it appears only as a standalone argument and as cwd.
-    expect(args.join(' ')).not.toContain('Set-Location');
-    expect(args.join(' ')).not.toContain('cd ');
+    expect(options.shell).toBe(false);
+    expect(options.stdio).toBe('inherit');
   });
 
-  it('does not enable a shell and does not use forbidden programs', async () => {
-    mockSpawn('spawn');
-    await launchInteractive({ path: 'C:\\pwsh.exe', majorVersion: 7 }, VAULT);
-    const [file, , options] = spawnMock.mock.calls[0] as [
-      string,
-      string[],
-      Record<string, unknown>,
-    ];
+  it('reports failures that are not ENOENT without falling back', async () => {
+    mockSpawns(['EACCES']);
+    const outcome = await launchInteractive({ path: PWSH, majorVersion: 7 }, VAULT);
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok) {
+      expect(outcome.code).toBe('UNKNOWN');
+    }
+  });
+});
+
+describe('launchInteractive — direct mode', () => {
+  beforeEach(() => {
+    spawnMock.mockReset();
+  });
+
+  it('spawns the verified pwsh.exe directly for vault paths containing ";"', async () => {
+    mockSpawns(['spawn']);
+    const outcome = await launchInteractive(
+      { path: PWSH, majorVersion: 7 },
+      VAULT_SEMICOLON,
+    );
+    expect(outcome.ok).toBe(true);
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    const [file, args, options] = calls()[0];
+    expect(file).toBe(PWSH);
+    expect(args).toEqual(['-WorkingDirectory', VAULT_SEMICOLON]);
+    expect(options.cwd).toBe(VAULT_SEMICOLON);
     expect(options.shell).toBe(false);
+    expect(options.stdio).toBe('inherit');
+  });
+
+  it('never spawns forbidden programs in direct mode', async () => {
+    mockSpawns(['spawn']);
+    await launchInteractive({ path: PWSH, majorVersion: 7 }, VAULT_SEMICOLON);
+    const [file] = calls()[0];
     const lower = file.toLowerCase();
     expect(lower).toMatch(/pwsh\.exe$/);
     for (const forbidden of ['powershell.exe', 'cmd.exe', 'wt.exe', 'conhost.exe', 'bash.exe']) {
@@ -75,71 +147,16 @@ describe('launchInteractive', () => {
     }
   });
 
-  it('never passes -NoProfile, -NonInteractive or -Command in the real session', async () => {
-    mockSpawn('spawn');
-    await launchInteractive({ path: 'C:\\pwsh.exe', majorVersion: 7 }, VAULT);
-    const [, args] = spawnMock.mock.calls[0] as [string, string[]];
-    expect(args).not.toContain('-NoProfile');
-    expect(args).not.toContain('-NonInteractive');
-    expect(args).not.toContain('-Command');
-    expect(args).toEqual(['-WorkingDirectory', VAULT]);
-  });
-
-  it('does not auto-run scripts', async () => {
-    mockSpawn('spawn');
-    await launchInteractive({ path: 'C:\\pwsh.exe', majorVersion: 7 }, VAULT);
-    const [, args] = spawnMock.mock.calls[0] as [string, string[]];
-    for (const arg of args) {
-      expect(arg).not.toMatch(/\.(ps1|cmd|bat)$/i);
-    }
-  });
-
-  it('shows the window (windowsHide false) and is not detached', async () => {
-    mockSpawn('spawn');
-    await launchInteractive({ path: 'C:\\pwsh.exe', majorVersion: 7 }, VAULT);
-    const [, , options] = spawnMock.mock.calls[0] as [
-      string,
-      string[],
-      Record<string, unknown>,
-    ];
-    expect(options.windowsHide).toBe(false);
-    expect(options.detached).toBe(false);
-  });
-
-  it('uses stdio inherit, never the unverified "ignore" value', async () => {
-    mockSpawn('spawn');
-    await launchInteractive({ path: 'C:\\pwsh.exe', majorVersion: 7 }, VAULT);
-    const [, , options] = spawnMock.mock.calls[0] as [
-      string,
-      string[],
-      Record<string, unknown>,
-    ];
-    expect(options.stdio).not.toBe('ignore');
-    expect(options.stdio).toBe('inherit');
-  });
-
-  it('unrefs the child so Obsidian does not wait for the session', async () => {
-    const child = mockSpawn('spawn');
-    await launchInteractive({ path: 'C:\\pwsh.exe', majorVersion: 7 }, VAULT);
-    expect(child.unref).toHaveBeenCalled();
-  });
-
-  it('reports ENOENT launch failures', async () => {
-    mockSpawn('enoent');
-    const outcome = await launchInteractive({ path: 'C:\\gone\\pwsh.exe', majorVersion: 7 }, VAULT);
+  it('reports ENOENT launch failures for a missing pwsh.exe', async () => {
+    mockSpawns(['ENOENT']);
+    const outcome = await launchInteractive(
+      { path: 'C:\\gone\\pwsh.exe', majorVersion: 7 },
+      VAULT_SEMICOLON,
+    );
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) {
       expect(outcome.code).toBe('ENOENT');
       expect(outcome.error).toBeInstanceOf(Error);
-    }
-  });
-
-  it('reports unknown launch failures with a code', async () => {
-    mockSpawn('unknown-error');
-    const outcome = await launchInteractive({ path: 'C:\\pwsh.exe', majorVersion: 7 }, VAULT);
-    expect(outcome.ok).toBe(false);
-    if (!outcome.ok) {
-      expect(outcome.code).toBe('UNKNOWN');
     }
   });
 });

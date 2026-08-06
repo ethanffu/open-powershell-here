@@ -13,13 +13,14 @@ Vault PowerShell is a lightweight Obsidian desktop plugin with exactly one entry
 ## Features
 
 - Obsidian left ribbon button (Lucide `terminal` icon, tooltip: `Open PowerShell at vault root`).
-- Creates only the verified `pwsh.exe` process directly. It never invokes `powershell.exe`, `cmd.exe`, `wt.exe`, `conhost.exe`, Windows `start`, WSL, Git Bash, or any other shell or terminal program.
+- Starts only the version-verified `pwsh.exe`; the real session is hosted in Windows Terminal (`wt.exe`) by default (hosting only, user-authorized). It never invokes `powershell.exe`, `cmd.exe`, `conhost.exe`, Windows `start`, WSL, Git Bash, or any other shell or terminal program, and never uses `shell: true`.
 - PowerShell lookup order:
   1. `pwsh.exe` (resolved by Windows against the PATH inherited by the Obsidian process)
   2. `%ProgramFiles%\PowerShell\7\pwsh.exe`
   3. `%USERPROFILE%\.dotnet\tools\pwsh.exe`
 - Each candidate is probed with a hidden version check (`-NoLogo -NoProfile -NonInteractive -Command $PSVersionTable.PSVersion.Major`, windowless, 5 s timeout, exit code 0 only, output must parse to an integer >= 7). PowerShell 6 is rejected.
-- After verification, the same `pwsh.exe` is started for the real session without `-NoProfile` / `-NonInteractive` / `-Command`; the user profile loads normally and nothing is auto-executed.
+- After verification, the same `pwsh.exe` is started for the real session via Windows Terminal (`wt.exe`, used only as the console window host) without `-NoProfile` / `-NonInteractive` / `-Command`; the user profile loads normally and nothing is auto-executed. If `wt.exe` is missing, or the vault path contains `;`, the plugin falls back to a direct `pwsh.exe` spawn.
+  > Background: when Obsidian is launched from Explorer (a GUI process without a console), a direct spawn cannot give pwsh interactive console handles and pwsh exits immediately (confirmed in real use on v0.1). Hosting the session in Windows Terminal gives pwsh real console handles and full interactivity (verified experimentally; see MANUAL_TESTS.md). This change was explicitly authorized by the user and is limited to hosting: the plugin does not proxy, listen to or record any input/output.
 - The vault path is passed as its own `-WorkingDirectory` argument, and the child `cwd` is set to the vault root as a second guarantee; the path is never embedded in a command string. Spaces, Chinese characters, `&`, parentheses, single quotes and other special characters are safe.
 - The verified `pwsh.exe` path and major version are cached in memory only (re-verified after restarting Obsidian); a launch-time `ENOENT` clears the cache and retries once.
 - A single-flight "resolving" lock prevents parallel probe chains on double clicks; once cached, every click opens a new session with no cooldown.
@@ -79,7 +80,8 @@ npm run verify  # lint + typecheck + test + build
 
 - The plugin has only a ribbon button: no palette commands, hotkeys, settings page, context menu, or embedded terminal.
 - Windows only; PowerShell 7+ only; 5.1 is not supported.
-- The plugin may only create `pwsh.exe` directly — no other shells, terminal programs, or `shell: true`. **Platform behavior findings** (see `MANUAL_TESTS.md`): when Obsidian is launched from Explorer (a console-less GUI process), Windows does not hand the new console's standard handles to a child created via Node.js `spawn`, so `pwsh` exits immediately because its standard input is unavailable; when Obsidian is launched from a terminal, `pwsh` attaches to that console and is fully interactive. This is a platform limitation of direct process creation from a GUI parent; the plugin does not work around it with any forbidden program. If you need a reliable, separate window from an Explorer-launched Obsidian, be aware of this limitation.
+- The real session is hosted in Windows Terminal (`wt.exe`) by default (user-authorized constraint change; the v0.1 direct-spawn build was verified to flash-close in real use). If `wt.exe` is missing, the plugin falls back to a direct `pwsh.exe` spawn (usable when Obsidian was started from a terminal). The plugin never invokes `cmd.exe`, `powershell.exe`, `conhost.exe`, Windows `start`, or `shell: true`.
+- **Vault paths containing `;` are not supported** (Windows Terminal treats `;` as a command separator — verified); such paths fall back to the direct spawn. All other special characters (spaces, `&`, parentheses, single quotes, CJK) are verified safe.
 - The repository is currently **Private** and not published to the Obsidian community marketplace; install by manually copying the build artifacts.
 
 ## Development Commands
@@ -105,7 +107,7 @@ npm run verify  # lint + typecheck + test + build
 `Implementation completed; manual Windows verification pending`
 
 - Code, build and automated tests are complete; Windows process-creation behavior was verified with scripted experiments (see "Platform behavior findings" in `MANUAL_TESTS.md`).
-- Manual acceptance inside a real Obsidian GUI (ribbon click) has not been performed yet; the pending items in `MANUAL_TESTS.md` are still open.
+- The user confirmed in real Obsidian that the v0.1 direct-spawn build flash-closes; the Windows Terminal-hosted fix is delivered and awaits re-verification in the `.test-vault`.
 
 ## License
 

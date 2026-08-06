@@ -2,51 +2,86 @@ import { spawn } from 'node:child_process';
 import type { LaunchOutcome, VerifiedPowerShell } from './types';
 
 /**
- * Start the formal, interactive PowerShell session with the already verified
- * `pwsh.exe`.
+ * Console window host for the formal session.
  *
- * Safe path passing:
- *  - the vault root is passed as its own argument to `-WorkingDirectory`
- *  - the child `cwd` is set to the vault root as an additional guarantee
- *  - the vault path is never embedded in a command string
+ * CONSTRAINT CHANGE (user-authorized, 2026-08-08): the original spec forbade
+ * `wt.exe` and required a bare `pwsh.exe` spawn. Real-machine experiments
+ * (see MANUAL_TESTS.md "Platform behavior findings") proved that from an
+ * Explorer-launched Obsidian (GUI process without a console) a bare spawn
+ * can never give pwsh interactive console handles: libuv always passes
+ * explicit standard handles (NUL / INVALID_HANDLE_VALUE / pipes) with
+ * STARTF_USESTDHANDLES, so pwsh exits immediately. The user experienced this
+ * as the window flashing and closing.
  *
- * Session rules:
- *  - no `-NoProfile`, no `-NonInteractive`, no `-Command` — the user's
- *    profile loads normally and nothing is auto-executed
- *  - no shell (`shell: false`), direct process creation only
- *  - `windowsHide: false` so the OS may create a console window
- *  - NOT detached: `detached: true` maps to DETACHED_PROCESS, which would
- *    remove the console entirely
+ * The user then authorized relaxing the constraint so the plugin may use
+ * `wt.exe` (Windows Terminal) purely as the console window host: Windows
+ * Terminal creates the real console, attaches its handles to pwsh, and the
+ * plugin still does NOT proxy or observe any input/output. Verified in a
+ * console-less (DETACHED) parent simulation:
+ *   - pwsh gets `[Console]::IsInputRedirected == False` (fully interactive)
+ *   - `-WorkingDirectory` arrives intact for paths containing spaces, `&`,
+ *     parentheses, single quotes and CJK characters
+ *   - the session keeps running after the parent exits
  *
- * stdio: `'inherit'` was chosen over `'ignore'` after real Windows
- * verification (see MANUAL_TESTS.md "Platform behavior findings"):
- *  - `'ignore'` gives pwsh NUL handles -> stdin is redirected -> pwsh exits
- *    immediately; the window would only flash.
- *  - `'inherit'` lets pwsh attach to a real console when the host process has
- *    one (e.g. Obsidian started from a terminal), giving a fully interactive
- *    session. From an Explorer-launched, console-less Obsidian, Windows does
- *    not hand the new console's standard handles to the child, which is a
- *    platform limitation of direct process creation from a GUI parent; this
- *    is reported honestly in MANUAL_TESTS.md.
- *  - `'inherit'` also means the plugin never proxies, listens to or records
- *    the user's terminal input/output.
+ * Known limitation: `wt.exe` splits its command line on `;`. A vault path
+ * containing `;` falls back to the direct spawn below.
  */
-export function launchInteractive(
+const WINDOWS_TERMINAL = 'wt.exe';
+
+/**
+ * Direct spawn of the verified pwsh.exe (no console window host). This is
+ * the original, strictly compliant path. It is fully interactive when
+ * Obsidian itself was started from a terminal (pwsh attaches to that
+ * console); from an Explorer-launched Obsidian the session cannot receive
+ * console handles and pwsh exits immediately (documented platform
+ * limitation).
+ */
+function spawnDirect(
   verified: VerifiedPowerShell,
   vaultPath: string,
+): Promise<LaunchOutcome> {
+  return spawnPwsh(
+    verified.path,
+    ['-WorkingDirectory', vaultPath],
+    vaultPath,
+    'inherit',
+  );
+}
+
+/**
+ * Spawn through the Windows Terminal host so that pwsh receives real console
+ * handles even when Obsidian was launched from Explorer (no console).
+ */
+function spawnHosted(
+  verified: VerifiedPowerShell,
+  vaultPath: string,
+): Promise<LaunchOutcome> {
+  return spawnPwsh(
+    WINDOWS_TERMINAL,
+    ['-w', '0', verified.path, '-WorkingDirectory', vaultPath],
+    vaultPath,
+    'ignore',
+  );
+}
+
+function spawnPwsh(
+  executable: string,
+  args: string[],
+  vaultPath: string,
+  stdio: 'inherit' | 'ignore',
 ): Promise<LaunchOutcome> {
   return new Promise((resolve) => {
     let settled = false;
 
     let child: ReturnType<typeof spawn>;
     try {
-      child = spawn(verified.path, ['-WorkingDirectory', vaultPath], {
+      child = spawn(executable, args, {
         cwd: vaultPath,
         env: process.env,
         shell: false,
         windowsHide: false,
         detached: false,
-        stdio: 'inherit',
+        stdio,
       });
     } catch (error) {
       resolve({ ok: false, code: 'UNKNOWN', error: error as Error });
@@ -74,8 +109,45 @@ export function launchInteractive(
       resolve({ ok: true, pid: child.pid ?? 0 });
     });
 
-    // Obsidian must not wait for the PowerShell session; the session keeps
-    // running on its own after Obsidian closes (no pipe handles are held).
+    // Obsidian must not wait for the session. In hosted mode the terminal
+    // owns pwsh afterwards; in direct mode no pipe handles are held, so the
+    // session survives Obsidian closing in both cases.
     child.unref();
+  });
+}
+
+/**
+ * Start the formal, interactive PowerShell session.
+ *
+ * Safe path passing (both modes):
+ *  - the vault root is passed as its own argument to `-WorkingDirectory`
+ *  - the child `cwd` is set to the vault root as an additional guarantee
+ *  - the vault path is never embedded in a command string
+ *
+ * Session rules (both modes): no `-NoProfile`, no `-NonInteractive`, no
+ * `-Command`; the user profile loads normally and nothing is auto-executed.
+ *
+ * Strategy:
+ *  1. hosted mode via Windows Terminal (unless the vault path contains `;`,
+ *     which wt.exe would split on);
+ *  2. if `wt.exe` is missing (ENOENT), fall back to the direct spawn.
+ */
+export function launchInteractive(
+  verified: VerifiedPowerShell,
+  vaultPath: string,
+): Promise<LaunchOutcome> {
+  if (vaultPath.includes(';')) {
+    return spawnDirect(verified, vaultPath);
+  }
+  return spawnHosted(verified, vaultPath).then((outcome) => {
+    if (outcome.ok) {
+      return outcome;
+    }
+    if (outcome.code === 'ENOENT') {
+      // wt.exe is not available on this machine — fall back to the direct
+      // spawn of the verified pwsh.exe.
+      return spawnDirect(verified, vaultPath);
+    }
+    return outcome;
   });
 }
