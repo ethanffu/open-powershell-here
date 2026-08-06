@@ -104,10 +104,10 @@ npm run verify  # lint + typecheck + test + build
 
 ## Current Project Status
 
-`Implementation completed; manual Windows verification pending`
+`MVP completed and manually verified (core items); extended checklist pending`
 
-- Code, build and automated tests are complete; Windows process-creation behavior was verified with scripted experiments (see "Platform behavior findings" in `MANUAL_TESTS.md`).
-- The user confirmed in real Obsidian that the v0.1 direct-spawn build flash-closes; the Windows Terminal-hosted fix is delivered and awaits re-verification in the `.test-vault`.
+- Code, build and automated tests are complete; Windows process-creation behavior was verified with scripted experiments (MANUAL_TESTS.md "Platform behavior findings").
+- Verified in real Obsidian: the v0.1 direct-spawn build flash-closed; the Windows Terminal-hosted build **opens a working interactive PowerShell window** (2026-08-08). Extended checklist items (special-character paths, profile loading, session survival after closing Obsidian, etc.) are still pending — see MANUAL_TESTS.md.
 
 ## License
 

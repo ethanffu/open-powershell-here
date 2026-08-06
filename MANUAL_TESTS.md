@@ -5,11 +5,13 @@
 ## 当前状态
 
 ```
-Manual Windows verification: partially performed (user clicked v0.1 in real Obsidian)
+MVP completed and manually verified (core items); extended checklist pending
 ```
 
-- 真实 Obsidian GUI 验收：**部分执行**。用户于 2026-08-08 在真实 Obsidian 中点击 Ribbon，确认 v0.1 直连版本**窗口闪退**（与平台行为发现一致）。
-- 修复版（wt.exe 宿主）已交付，**待用户重新验收**（`.test-vault`）。
+- 真实 Obsidian GUI 验收：**核心项已通过**（2026-08-08 用户实测）。
+  - v0.1 直连版本：用户确认**窗口闪退**（与平台行为发现一致）。
+  - wt.exe 宿主修复版：用户确认**可正常打开 PowerShell 窗口、可正常输入输出（对话）**。
+- 扩展清单项（特殊字符路径、Profile、关闭 Obsidian 后会话存活等）仍待用户验证。
 - 脚本化 Windows 平台实验：已执行（2026-08-06/08，Windows 桌面会话 + pwsh 7.6.4 MSIX + Node 24.16.0），结论见下。
 - 不得将自动化测试或脚本化实验描述为真实窗口验证。
 
@@ -25,14 +27,14 @@ Manual Windows verification: partially performed (user clicked v0.1 in real Obsi
 
 | # | 项目 | 步骤 | 预期 | 状态 |
 | --- | --- | --- | --- | --- |
-| 1 | 窗口可见 | 点击 Ribbon 按钮 | 出现新的 PowerShell 窗口 | 未执行 |
-| 2 | 可以输入命令 | 在新窗口中输入 `Get-Location` 回车 | 有输出 | 未执行 |
-| 3 | 可以看到输出 | 同上 | 输出可见 | 未执行 |
-| 4 | 初始目录正确 | 输入 `Get-Location` | 等于 vault 根目录 | 未执行 |
-| 5 | PowerShell 版本 | 输入 `$PSVersionTable.PSVersion.Major` | ≥ 7 | 未执行 |
-| 6 | Profile 正常加载 | 观察窗口标题/提示符或输入 `$PROFILE` 相关命令 | 用户 Profile 生效 | 未执行 |
-| 7 | 关闭 Obsidian 后会话继续 | 打开窗口后关闭 Obsidian | pwsh 进程仍在运行 | 未执行 |
-| 8 | 未调用其他 Shell/终端 | 打开任务管理器或 `Get-Process` | 无 cmd/wt/conhost 由插件启动 | 未执行 |
+| 1 | 窗口可见 | 点击 Ribbon 按钮 | 出现新的 PowerShell 窗口 | **通过**（2026-08-08） |
+| 2 | 可以输入命令 | 在新窗口中输入 `Get-Location` 回车 | 有输出 | **通过**（2026-08-08） |
+| 3 | 可以看到输出 | 同上 | 输出可见 | **通过**（2026-08-08） |
+| 4 | 初始目录正确 | 输入 `Get-Location` | 等于 vault 根目录 | 待验证 |
+| 5 | PowerShell 版本 | 输入 `$PSVersionTable.PSVersion.Major` | ≥ 7 | **通过**（隐含：插件版本探测放行后才启动） |
+| 6 | Profile 正常加载 | 观察窗口标题/提示符或输入 `$PROFILE` 相关命令 | 用户 Profile 生效 | 待验证 |
+| 7 | 关闭 Obsidian 后会话继续 | 打开窗口后关闭 Obsidian | pwsh 进程仍在运行 | 待验证 |
+| 8 | 未调用其他 Shell/终端 | 打开任务管理器或 `Get-Process` | 无 cmd/wt/conhost 由插件启动 | 待验证（代码层面保证：仅 wt.exe 宿主 + pwsh） |
 | 9 | PATH 中的 PowerShell | 仅把 `pwsh.exe` 放入 PATH | 可启动 | 未执行 |
 | 10 | 标准安装目录 | `%ProgramFiles%\PowerShell\7\pwsh.exe` | 可启动 | 未执行 |
 | 11 | 未安装 PowerShell | 移除/改名 pwsh | Notice：`PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.` | 未执行 |
@@ -46,7 +48,7 @@ Manual Windows verification: partially performed (user clicked v0.1 in real Obsi
 | 19 | 含单引号路径 | 如 `E:\It's vault` | 正常 | 未执行 |
 | 20 | 其他盘符 | 如 `D:\Vault` | 正常 | 未执行 |
 | 21 | UNC 路径 | 系统与 PowerShell 支持的情况下 | 尽力验证并记录结果 | 未执行 |
-| 22 | wt 宿主窗口（修复版） | 点击 Ribbon（Windows Terminal 已安装） | 出现新的 WT 窗口且 pwsh 不闪退 | **待用户重测** |
+| 22 | wt 宿主窗口（修复版） | 点击 Ribbon（Windows Terminal 已安装） | 出现新的 WT 窗口且 pwsh 不闪退 | **通过**（2026-08-08，可交互） |
 | 23 | wt 缺失回退 | 临时移除 wt 或 PATH 中无 wt | 回退直连（终端启动场景可用） | 未执行 |
 | 24 | 含 `;` 路径 vault | 路径含分号（罕见） | 回退直连，行为与 v0.1 相同 | 未执行 |
 
