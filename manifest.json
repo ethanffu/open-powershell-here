@@ -1,0 +1,9 @@
+{
+  "id": "vault-powershell",
+  "name": "Vault PowerShell",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "Open PowerShell 7 or later at the root of the current vault from the Obsidian ribbon.",
+  "author": "ethanfu0124-bit",
+  "isDesktopOnly": true
+}

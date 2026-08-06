@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Test vault (never committed)
+.test-vault/
+
+# Build / coverage output
+dist/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.idea/
+.vscode/
+*.swp
