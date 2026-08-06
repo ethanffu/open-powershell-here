@@ -94,7 +94,7 @@ npm run verify  # lint + typecheck + test + build
 | `npm run typecheck` | TypeScript type checking |
 | `npm test` | Automated tests (Vitest) |
 | `npm run verify` | lint + typecheck + test + build |
-| `npm run install:test` | Copy artifacts into the project-local `.test-vault` (gitignored) |
+| `npm run install:test` | Copy artifacts into the project-local `.test-vault` (gitignored) and register the plugin in the enabled-plugins list (`community-plugins.json`) so it loads automatically when the test vault is opened |
 
 ## Testing
 

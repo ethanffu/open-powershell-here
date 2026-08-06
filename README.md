@@ -94,7 +94,7 @@ npm run verify  # lint + typecheck + test + build 全量验证
 | `npm run typecheck` | TypeScript 类型检查 |
 | `npm test` | 运行自动化测试（Vitest） |
 | `npm run verify` | 依次执行 lint、typecheck、test、build |
-| `npm run install:test` | 把构建产物复制到项目内 `.test-vault`（临时测试 vault，已 gitignore） |
+| `npm run install:test` | 把构建产物复制到项目内 `.test-vault`（临时测试 vault，已 gitignore），并自动把插件写入启用列表（`community-plugins.json`），打开测试 vault 即自动加载 |
 
 ## 测试说明
 
