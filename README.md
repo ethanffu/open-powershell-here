@@ -44,17 +44,20 @@ Vault PowerShell 是一个轻量级 Obsidian 桌面插件，只提供一个 Ribb
 
 私有仓库不发布到 Obsidian 社区市场，可通过以下任一方式安装：
 
-**方式 A：从 GitHub Release 下载（v0.1.1）**
+**方式 A：从 GitHub Release 下载 zip（推荐，无需命令行）**
 
-1. 打开仓库 Release 页面，下载 v0.1.1 的 `main.js` 与 `manifest.json`。
-2. 找到你的 vault 目录，进入 `.obsidian/plugins/`（不存在则创建）。
-3. 创建文件夹 `vault-powershell/`，把下载的两个文件复制进去（如有 `styles.css` 一并复制）。
-4. 在 Obsidian 设置 → 第三方插件中启用 **Vault PowerShell**。
+1. 用浏览器打开仓库 Release 页面（需登录 GitHub）：`https://github.com/ethanfu0124-bit/vault-powershell/releases`（或直接访问 v0.1.1 资产页）。
+2. 下载 `vault-powershell-0.1.1.zip`，解压得到 `vault-powershell/` 文件夹。
+3. 找到你的 vault 目录，进入 `.obsidian/plugins/`（不存在则创建）。
+4. 把解压出的 `vault-powershell/` 整个文件夹复制进去。
+5. 在 Obsidian 设置 → 第三方插件中启用 **Vault PowerShell**（若提示受限模式，先关闭它）。
+
+> 因仓库为 Private，下载需要 GitHub 账号登录；zip 可自由转发给需要的人（解压即用，无需 GitHub 账号）。
 
 **方式 B：从源码构建**
 
 1. 在项目根目录执行 `npm run build`（或直接使用仓库中已提交的 `main.js`）。
-2. 同方式 A 第 2–4 步，把构建产物复制进 `.obsidian/plugins/vault-powershell/` 并启用。
+2. 同方式 A 第 3–5 步，把 `main.js` 与 `manifest.json` 放进 `.obsidian/plugins/vault-powershell/` 并启用。
 
 ## 从源码构建
 
