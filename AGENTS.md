@@ -38,6 +38,11 @@
   5. `git add -A`；有变化才提交（Conventional Commits，如 `feat:`/`fix:`/`test:`/`docs:`/`chore:`）；无变化不得空提交；
   6. 推送 `origin/main`；确认远端 HEAD 与本地一致；`git status` 干净后才回复。
 - **禁止**：`git push --force` / `--force-with-lease`、改写已推送历史、删除远端分支、改仓库为 Public、覆盖/删除已有远端、跳过 Git hooks、提交凭据。
+- **推送方式（重要）**：当前 GitHub 账号的 OAuth token 缺少 `workflow` scope（`gh auth status` 确认），HTTPS 推送含 `.github/workflows/` 的提交会被拒绝。仓库已配置仓库级 SSH deploy key（`~/.ssh/vault_powershell_deploy`，仅限本仓库、可写）。推送命令：
+  ```bash
+  GIT_SSH_COMMAND="ssh -i ~/.ssh/vault_powershell_deploy -o StrictHostKeyChecking=accept-new" git push origin-ssh main
+  ```
+  `origin`（HTTPS）保留用于 `gh` 读取/API 操作；不要删除 deploy key。若日后 token 获得 `workflow` scope（`gh auth refresh -s workflow`），可回归普通 `git push origin main`。
 - 构建或测试失败时不得创建声称“已完成”的提交；用户要求保存进度时可提交 WIP 并明确说明。
 - 版本发布（tag/Release/版本号/versions.json 更新）只在用户明确要求时进行；普通提交不创建 tag、不创建 Release、不升版本号。
 - 自动化验证、构建、真实 Windows GUI 验证、Git 提交、GitHub 推送、README/About 同步必须分开如实报告，不得笼统声称“全部完成”。
