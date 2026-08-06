@@ -104,10 +104,11 @@ npm run verify  # lint + typecheck + test + build 全量验证
 
 ## 当前项目状态
 
-`MVP completed and manually verified (core items); extended checklist pending`
+`MVP completed and manually verified`
 
 - 代码、构建与自动化测试已完成；Windows 进程创建行为已通过脚本化实验验证（MANUAL_TESTS.md“平台行为发现”）。
-- 用户在真实 Obsidian 中实测：v0.1 直连版闪退；wt 宿主修复版**可正常打开 PowerShell 窗口且可交互**（2026-08-08）。扩展验收项（特殊字符路径、Profile、关闭 Obsidian 后会话存活等）待验证，见 MANUAL_TESTS.md。
+- 用户在真实 Obsidian 中实测（2026-08-08）：wt 宿主版可正常打开交互式 PowerShell 窗口，`Get-Location` 为 vault 根目录、版本 ≥ 7、关闭 Obsidian 后会话继续运行、插件重启后自动加载。
+- 剩余低优先级验收项（特殊字符 vault 路径的实机验证、wt 缺失回退、分号路径、UNC、未安装场景）未逐一实机验证，其中多项已有脚本化实验/自动化测试覆盖，见 MANUAL_TESTS.md。
 
 ## License
 

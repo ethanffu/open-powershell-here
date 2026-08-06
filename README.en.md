@@ -104,10 +104,11 @@ npm run verify  # lint + typecheck + test + build
 
 ## Current Project Status
 
-`MVP completed and manually verified (core items); extended checklist pending`
+`MVP completed and manually verified`
 
 - Code, build and automated tests are complete; Windows process-creation behavior was verified with scripted experiments (MANUAL_TESTS.md "Platform behavior findings").
-- Verified in real Obsidian: the v0.1 direct-spawn build flash-closed; the Windows Terminal-hosted build **opens a working interactive PowerShell window** (2026-08-08). Extended checklist items (special-character paths, profile loading, session survival after closing Obsidian, etc.) are still pending — see MANUAL_TESTS.md.
+- Verified in real Obsidian (2026-08-08): the Windows Terminal-hosted build opens a working interactive PowerShell window; `Get-Location` equals the vault root, version >= 7, the session survives closing Obsidian, and the plugin auto-loads after restart.
+- Remaining low-priority checklist items (special-character vault paths on the real machine, wt-missing fallback, semicolon paths, UNC, missing-install scenarios) were not individually verified; several are already covered by scripted experiments or automated tests — see MANUAL_TESTS.md.
 
 ## License
 

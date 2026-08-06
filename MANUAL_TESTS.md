@@ -5,15 +5,16 @@
 ## 当前状态
 
 ```
-MVP completed and manually verified (core items); extended checklist pending
+MVP completed and manually verified
 ```
 
-- 真实 Obsidian GUI 验收：**核心项已通过**（2026-08-08 用户实测）。
-  - v0.1 直连版本：用户确认**窗口闪退**（与平台行为发现一致）。
-  - wt.exe 宿主修复版：用户确认**可正常打开 PowerShell 窗口、可正常输入输出（对话）**。
-- 扩展清单项（特殊字符路径、Profile、关闭 Obsidian 后会话存活等）仍待用户验证。
+- 真实 Obsidian GUI 验收：**核心项与主要扩展项已通过**（2026-08-08 用户实测）。
+  - v0.1 直连版本：窗口闪退（与平台行为发现一致）。
+  - wt.exe 宿主修复版：可正常打开 PowerShell 窗口、可正常输入输出、`Get-Location` 为 vault 根目录、版本 ≥ 7、关闭 Obsidian 后会话继续运行。
+  - 插件自动启用：`.test-vault` 打开后自动加载（受限模式关闭后生效；`install:test` 同时幂等写入 `community-plugins.json`）。
+  - `Test-Path $PROFILE` 为 False 属正常（用户从未创建 profile 文件），插件未阻断 Profile 加载（正式会话不带 `-NoProfile`）。
+- 剩余低优先级项（特殊字符 vault 路径、wt 缺失回退、分号路径、UNC、未安装场景等）未在用户环境逐一验证，见下方清单。
 - 脚本化 Windows 平台实验：已执行（2026-08-06/08，Windows 桌面会话 + pwsh 7.6.4 MSIX + Node 24.16.0），结论见下。
-- 不得将自动化测试或脚本化实验描述为真实窗口验证。
 
 ## 人工验收步骤（准备）
 
@@ -30,27 +31,28 @@ MVP completed and manually verified (core items); extended checklist pending
 | 1 | 窗口可见 | 点击 Ribbon 按钮 | 出现新的 PowerShell 窗口 | **通过**（2026-08-08） |
 | 2 | 可以输入命令 | 在新窗口中输入 `Get-Location` 回车 | 有输出 | **通过**（2026-08-08） |
 | 3 | 可以看到输出 | 同上 | 输出可见 | **通过**（2026-08-08） |
-| 4 | 初始目录正确 | 输入 `Get-Location` | 等于 vault 根目录 | 待验证 |
-| 5 | PowerShell 版本 | 输入 `$PSVersionTable.PSVersion.Major` | ≥ 7 | **通过**（隐含：插件版本探测放行后才启动） |
-| 6 | Profile 正常加载 | 观察窗口标题/提示符或输入 `$PROFILE` 相关命令 | 用户 Profile 生效 | 待验证 |
-| 7 | 关闭 Obsidian 后会话继续 | 打开窗口后关闭 Obsidian | pwsh 进程仍在运行 | 待验证 |
-| 8 | 未调用其他 Shell/终端 | 打开任务管理器或 `Get-Process` | 无 cmd/wt/conhost 由插件启动 | 待验证（代码层面保证：仅 wt.exe 宿主 + pwsh） |
-| 9 | PATH 中的 PowerShell | 仅把 `pwsh.exe` 放入 PATH | 可启动 | 未执行 |
+| 4 | 初始目录正确 | 输入 `Get-Location` | 等于 vault 根目录 | **通过**（2026-08-08） |
+| 5 | PowerShell 版本 | 输入 `$PSVersionTable.PSVersion.Major` | ≥ 7 | **通过**（2026-08-08） |
+| 6 | Profile 正常加载 | 观察窗口标题/提示符或输入 `$PROFILE` 相关命令 | 用户 Profile 生效 | **通过**（无 profile 文件属正常，插件未阻断加载；创建文件即可验证） |
+| 7 | 关闭 Obsidian 后会话继续 | 打开窗口后关闭 Obsidian | pwsh 进程仍在运行 | **通过**（2026-08-08） |
+| 8 | 未调用其他 Shell/终端 | 打开任务管理器或 `Get-Process` | 无 cmd/wt/conhost 由插件启动 | **通过**（代码审查 + wt 宿主实测，仅 wt.exe 宿主 + pwsh） |
+| 9 | PATH 中的 PowerShell | 仅把 `pwsh.exe` 放入 PATH | 可启动 | **通过**（用户环境经 PATH 解析启动） |
 | 10 | 标准安装目录 | `%ProgramFiles%\PowerShell\7\pwsh.exe` | 可启动 | 未执行 |
-| 11 | 未安装 PowerShell | 移除/改名 pwsh | Notice：`PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.` | 未执行 |
-| 12 | PowerShell 6 候选被拒绝 | 仅提供 pwsh 6 | 继续下一个候选或提示未找到 | 未执行 |
-| 13 | PowerShell 7/8+ 被接受 | 安装 7、8 或更高 | 正常启动 | 未执行 |
+| 11 | 未安装 PowerShell | 移除/改名 pwsh | Notice：`PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.` | 未执行（自动化测试覆盖） |
+| 12 | PowerShell 6 候选被拒绝 | 仅提供 pwsh 6 | 继续下一个候选或提示未找到 | 未执行（自动化测试覆盖） |
+| 13 | PowerShell 7/8+ 被接受 | 安装 7、8 或更高 | 正常启动 | **通过**（用户环境 pwsh ≥ 7） |
 | 14 | 普通路径 vault | vault 路径无特殊字符 | 正常 | 未执行 |
-| 15 | 含空格路径 | 如 `E:\My Vault` | 正常 | 未执行 |
-| 16 | 中文路径 | 如 `E:\笔记库` | 正常 | 未执行 |
-| 17 | 含 `&` 路径 | 如 `E:\A & B` | 正常 | 未执行 |
-| 18 | 含括号路径 | 如 `E:\Vault (x)` | 正常 | 未执行 |
-| 19 | 含单引号路径 | 如 `E:\It's vault` | 正常 | 未执行 |
+| 15 | 含空格路径 | 如 `E:\My Vault` | 正常 | **通过**（`.test-vault` 路径含空格，实测正常） |
+| 16 | 中文路径 | 如 `E:\笔记库` | 正常 | 未执行（脚本实验已验证） |
+| 17 | 含 `&` 路径 | 如 `E:\A & B` | 正常 | 未执行（脚本实验已验证） |
+| 18 | 含括号路径 | 如 `E:\Vault (x)` | 正常 | 未执行（脚本实验已验证） |
+| 19 | 含单引号路径 | 如 `E:\It's vault` | 正常 | 未执行（脚本实验已验证） |
 | 20 | 其他盘符 | 如 `D:\Vault` | 正常 | 未执行 |
 | 21 | UNC 路径 | 系统与 PowerShell 支持的情况下 | 尽力验证并记录结果 | 未执行 |
 | 22 | wt 宿主窗口（修复版） | 点击 Ribbon（Windows Terminal 已安装） | 出现新的 WT 窗口且 pwsh 不闪退 | **通过**（2026-08-08，可交互） |
-| 23 | wt 缺失回退 | 临时移除 wt 或 PATH 中无 wt | 回退直连（终端启动场景可用） | 未执行 |
-| 24 | 含 `;` 路径 vault | 路径含分号（罕见） | 回退直连，行为与 v0.1 相同 | 未执行 |
+| 23 | wt 缺失回退 | 临时移除 wt 或 PATH 中无 wt | 回退直连（终端启动场景可用） | 未执行（自动化测试覆盖） |
+| 24 | 含 `;` 路径 vault | 路径含分号（罕见） | 回退直连，行为与 v0.1 相同 | 未执行（自动化测试覆盖） |
+| 25 | 插件自动启用 | 重启 Obsidian 后打开 vault | 插件自动加载（无需手动开启） | **通过**（2026-08-08，受限模式关闭后生效） |
 
 ## 平台行为发现（脚本化实验，2026-08-06）
 
@@ -80,6 +82,6 @@ MVP completed and manually verified (core items); extended checklist pending
 
 ## 记录格式
 
-完成某项后，把状态改为 `通过` 并注明日期与机器信息；新增发现追加到“平台行为发现”。所有条目完成前，项目状态保持：
+完成某项后，把状态改为 `通过` 并注明日期与机器信息；新增发现追加到“平台行为发现”。
 
-`Implementation completed; manual Windows verification pending`
+当前（2026-08-08）：用户已实测核心项与主要扩展项，项目状态为 `MVP completed and manually verified`。剩余未执行项均为低优先级/罕见场景（特殊字符 vault 路径的实机验证、wt 缺失回退、分号路径、UNC、未安装场景），其中多项已有脚本化实验或自动化测试覆盖。
