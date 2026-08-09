@@ -48,8 +48,8 @@ Vault PowerShell 是一个轻量级 Obsidian 桌面插件，提供两个入口�
 
 **方式 A：从 GitHub Release 下载 zip（推荐，无需命令行）**
 
-1. 用浏览器打开仓库 Release 页面（需登录 GitHub）：`https://github.com/ethanffu/vault-powershell/releases`（或直接访问 v0.1.1 资产页）。
-2. 下载 `vault-powershell-0.1.1.zip`，解压得到 `vault-powershell/` 文件夹。
+1. 用浏览器打开仓库 Release 页面（需登录 GitHub）：`https://github.com/ethanffu/vault-powershell/releases`（或直接访问 v0.2.0 资产页）。
+2. 下载 `vault-powershell-0.2.0.zip`，解压得到 `vault-powershell/` 文件夹。
 3. 找到你的 vault 目录，进入 `.obsidian/plugins/`（不存在则创建）。
 4. 把解压出的 `vault-powershell/` 整个文件夹复制进去。
 5. 在 Obsidian 设置 → 第三方插件中启用 **Vault PowerShell**（若提示受限模式，先关闭它）。

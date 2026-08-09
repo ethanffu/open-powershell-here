@@ -48,8 +48,8 @@ The private repository is not published to the Obsidian community marketplace; i
 
 **Option A: Download the zip from GitHub Releases (recommended, no CLI needed)**
 
-1. In a browser (GitHub login required), open the repository's Releases page: `https://github.com/ethanffu/vault-powershell/releases` (or go directly to the v0.1.1 assets page).
-2. Download `vault-powershell-0.1.1.zip` and unzip it — you get a `vault-powershell/` folder.
+1. In a browser (GitHub login required), open the repository's Releases page: `https://github.com/ethanffu/vault-powershell/releases` (or go directly to the v0.2.0 assets page).
+2. Download `vault-powershell-0.2.0.zip` and unzip it — you get a `vault-powershell/` folder.
 3. Open your vault folder and go to `.obsidian/plugins/` (create it if missing).
 4. Copy the whole unzipped `vault-powershell/` folder into it.
 5. In Obsidian settings → Community plugins, enable **Vault PowerShell** (turn off Restricted Mode first if prompted).

@@ -8,7 +8,7 @@
   1. **Ribbon 按钮**：打开本机 PowerShell 7+（`pwsh.exe`），初始工作目录为当前 vault 根目录；
   2. **单文件夹右键菜单**（文件资源管理器中右键单个文件夹，菜单项 `Open PowerShell here`）：以被右键文件夹的真实 Windows 绝对路径打开 PowerShell 7+。
 - 仍禁止：命令面板命令、快捷键、设置页、批量（多选）右键菜单（`files-menu`）、普通文件右键菜单、内嵌终端、自动执行脚本。
-- 插件 ID：`vault-powershell`；主类：`VaultPowerShellPlugin`；当前版本 `0.1.1`；仓库 Private，默认分支 `main`。
+- 插件 ID：`vault-powershell`；主类：`VaultPowerShellPlugin`；当前版本 `0.2.0`；仓库 Private，默认分支 `main`。
 
 ## 硬性约束（不可违反）
 
