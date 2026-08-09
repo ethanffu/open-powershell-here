@@ -115,43 +115,47 @@ describe('launchInteractive — hosted mode via Windows Terminal', () => {
   });
 });
 
-describe('launchInteractive — direct mode', () => {
+describe('launchInteractive — semicolon paths are refused', () => {
   beforeEach(() => {
     spawnMock.mockReset();
   });
 
-  it('spawns the verified pwsh.exe directly for vault paths containing ";"', async () => {
-    mockSpawns(['spawn']);
+  it('refuses to launch and creates no process for a path containing ";"', async () => {
     const outcome = await launchInteractive(
       { path: PWSH, majorVersion: 7 },
       VAULT_SEMICOLON,
     );
-    expect(outcome.ok).toBe(true);
-    expect(spawnMock).toHaveBeenCalledTimes(1);
-    const [file, args, options] = calls()[0];
-    expect(file).toBe(PWSH);
-    expect(args).toEqual(['-WorkingDirectory', VAULT_SEMICOLON]);
-    expect(options.cwd).toBe(VAULT_SEMICOLON);
-    expect(options.shell).toBe(false);
-    expect(options.stdio).toBe('inherit');
+    expect(outcome.ok).toBe(false);
+    if (!outcome.ok) {
+      expect(outcome.code).toBe('UNKNOWN');
+      expect(outcome.error.message).toMatch(/semicolon/);
+    }
+    // The semicolon guard is enforced before any process creation: neither
+    // wt.exe nor pwsh.exe may be spawned for such paths.
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('launchInteractive — direct fallback', () => {
+  beforeEach(() => {
+    spawnMock.mockReset();
   });
 
-  it('never spawns forbidden programs in direct mode', async () => {
-    mockSpawns(['spawn']);
-    await launchInteractive({ path: PWSH, majorVersion: 7 }, VAULT_SEMICOLON);
-    const [file] = calls()[0];
-    const lower = file.toLowerCase();
-    expect(lower).toMatch(/pwsh\.exe$/);
-    for (const forbidden of ['powershell.exe', 'cmd.exe', 'wt.exe', 'conhost.exe', 'bash.exe']) {
-      expect(lower).not.toMatch(new RegExp(`${forbidden.replace('.', '\\.')}$`));
+  it('never spawns forbidden programs in direct fallback mode', async () => {
+    mockSpawns(['ENOENT', 'spawn']);
+    await launchInteractive({ path: PWSH, majorVersion: 7 }, VAULT);
+    const files = calls().map(([file]) => file.toLowerCase());
+    expect(files[1]).toMatch(/pwsh\.exe$/);
+    for (const forbidden of ['powershell.exe', 'cmd.exe', 'conhost.exe', 'bash.exe']) {
+      expect(files[1]).not.toMatch(new RegExp(`${forbidden.replace('.', '\\.')}$`));
     }
   });
 
   it('reports ENOENT launch failures for a missing pwsh.exe', async () => {
-    mockSpawns(['ENOENT']);
+    mockSpawns(['ENOENT', 'ENOENT']);
     const outcome = await launchInteractive(
       { path: 'C:\\gone\\pwsh.exe', majorVersion: 7 },
-      VAULT_SEMICOLON,
+      VAULT,
     );
     expect(outcome.ok).toBe(false);
     if (!outcome.ok) {

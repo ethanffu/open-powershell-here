@@ -23,8 +23,12 @@ import type { LaunchOutcome, VerifiedPowerShell } from './types';
  *     parentheses, single quotes and CJK characters
  *   - the session keeps running after the parent exits
  *
- * Known limitation: `wt.exe` splits its command line on `;`. A vault path
- * containing `;` falls back to the direct spawn below.
+ * Known limitation: `wt.exe` splits its command line on `;`, so a target
+ * path containing `;` can never be launched reliably. Per user approval
+ * (2026-08-09) such paths are refused: `launchInteractive` returns a
+ * failure WITHOUT spawning anything, and the plugin shows a notice instead.
+ * The caller (`main.ts`) guards before the probe; this function re-guards
+ * defensively so no process is ever created for a `;` path.
  */
 const WINDOWS_TERMINAL = 'wt.exe';
 
@@ -34,16 +38,16 @@ const WINDOWS_TERMINAL = 'wt.exe';
  * Obsidian itself was started from a terminal (pwsh attaches to that
  * console); from an Explorer-launched Obsidian the session cannot receive
  * console handles and pwsh exits immediately (documented platform
- * limitation).
+ * limitation). Used only as the fallback when `wt.exe` is missing.
  */
 function spawnDirect(
   verified: VerifiedPowerShell,
-  vaultPath: string,
+  targetDir: string,
 ): Promise<LaunchOutcome> {
   return spawnPwsh(
     verified.path,
-    ['-WorkingDirectory', vaultPath],
-    vaultPath,
+    ['-WorkingDirectory', targetDir],
+    targetDir,
     'inherit',
   );
 }
@@ -54,12 +58,12 @@ function spawnDirect(
  */
 function spawnHosted(
   verified: VerifiedPowerShell,
-  vaultPath: string,
+  targetDir: string,
 ): Promise<LaunchOutcome> {
   return spawnPwsh(
     WINDOWS_TERMINAL,
-    ['-w', '0', verified.path, '-WorkingDirectory', vaultPath],
-    vaultPath,
+    ['-w', '0', verified.path, '-WorkingDirectory', targetDir],
+    targetDir,
     'ignore',
   );
 }
@@ -67,7 +71,7 @@ function spawnHosted(
 function spawnPwsh(
   executable: string,
   args: string[],
-  vaultPath: string,
+  targetDir: string,
   stdio: 'inherit' | 'ignore',
 ): Promise<LaunchOutcome> {
   return new Promise((resolve) => {
@@ -76,7 +80,7 @@ function spawnPwsh(
     let child: ReturnType<typeof spawn>;
     try {
       child = spawn(executable, args, {
-        cwd: vaultPath,
+        cwd: targetDir,
         env: process.env,
         shell: false,
         windowsHide: false,
@@ -117,36 +121,48 @@ function spawnPwsh(
 }
 
 /**
- * Start the formal, interactive PowerShell session.
+ * Start the formal, interactive PowerShell session in `targetDir` (the
+ * vault root for the ribbon, the right-clicked folder for the context
+ * menu).
  *
  * Safe path passing (both modes):
- *  - the vault root is passed as its own argument to `-WorkingDirectory`
- *  - the child `cwd` is set to the vault root as an additional guarantee
- *  - the vault path is never embedded in a command string
+ *  - the target directory is passed as its own argument to
+ *    `-WorkingDirectory`
+ *  - the child `cwd` is set to the target directory as an additional
+ *    guarantee
+ *  - the path is never embedded in a command string
  *
  * Session rules (both modes): no `-NoProfile`, no `-NonInteractive`, no
  * `-Command`; the user profile loads normally and nothing is auto-executed.
  *
  * Strategy:
- *  1. hosted mode via Windows Terminal (unless the vault path contains `;`,
- *     which wt.exe would split on);
- *  2. if `wt.exe` is missing (ENOENT), fall back to the direct spawn.
+ *  1. refuse paths containing `;` without spawning anything (wt.exe would
+ *     split on the semicolon; launching there is unreliable by design);
+ *  2. hosted mode via Windows Terminal;
+ *  3. if `wt.exe` is missing (ENOENT), fall back to the direct spawn of the
+ *     verified pwsh.exe.
  */
 export function launchInteractive(
   verified: VerifiedPowerShell,
-  vaultPath: string,
+  targetDir: string,
 ): Promise<LaunchOutcome> {
-  if (vaultPath.includes(';')) {
-    return spawnDirect(verified, vaultPath);
+  if (targetDir.includes(';')) {
+    return Promise.resolve({
+      ok: false,
+      code: 'UNKNOWN',
+      error: new Error(
+        'Refusing to launch PowerShell for a path containing a semicolon (;).',
+      ),
+    });
   }
-  return spawnHosted(verified, vaultPath).then((outcome) => {
+  return spawnHosted(verified, targetDir).then((outcome) => {
     if (outcome.ok) {
       return outcome;
     }
     if (outcome.code === 'ENOENT') {
       // wt.exe is not available on this machine — fall back to the direct
       // spawn of the verified pwsh.exe.
-      return spawnDirect(verified, vaultPath);
+      return spawnDirect(verified, targetDir);
     }
     return outcome;
   });
