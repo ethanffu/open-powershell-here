@@ -116,12 +116,12 @@ npm run verify  # lint + typecheck + test + build 全量验证
 
 ## 当前项目状态
 
-`context-menu entry added; GUI acceptance pending`
+`context-menu entry manually verified (core items); edge items pending`
 
 - 代码、构建与自动化测试已完成；Windows 进程创建行为已通过脚本化实验验证（MANUAL_TESTS.md“平台行为发现”）。
 - 用户在真实 Obsidian 中实测（2026-08-08）：wt 宿主版的 Ribbon 入口可正常打开交互式 PowerShell 窗口，`Get-Location` 为 vault 根目录、版本 ≥ 7、关闭 Obsidian 后会话继续运行、插件重启后自动加载。
-- 文件夹右键菜单入口（`Open PowerShell here`）与分号路径 Notice 行为为 2026-08-09 新增，**尚未在真实 Obsidian 中人工验收**，见 MANUAL_TESTS.md。
-- 剩余低优先级验收项（特殊字符路径的实机验证、wt 缺失回退、UNC、未安装场景等）未逐一实机验证，其中多项已有脚本化实验/自动化测试覆盖，见 MANUAL_TESTS.md。
+- 用户在真实 Obsidian 中实测（2026-08-09）：文件夹右键菜单入口可正常使用——右键单个文件夹出现 `Open PowerShell here`（终端图标），点击后在该文件夹真实绝对路径打开可交互 PowerShell，`Get-Location` 正确。
+- 分号文件夹报错、vault 根文件夹右键、文件右键不显示、插件重载去重等边缘项**尚未逐一实机验证**（见 MANUAL_TESTS.md #28–#33）；剩余低优先级项（特殊字符路径实机验证、wt 缺失回退、UNC、未安装场景等）同样未逐一实机验证，其中多项已有脚本化实验/自动化测试覆盖。
 
 ## License
 

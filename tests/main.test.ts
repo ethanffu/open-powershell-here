@@ -11,6 +11,7 @@ import {
 } from '../tests/mocks/obsidian';
 import VaultPowerShellPlugin, { type PluginDeps } from '../src/main';
 import { getVaultRootPath } from '../src/vault-path';
+import { type FinderDeps } from '../src/powershell/finder';
 
 const spawnState = vi.hoisted(() => ({
   spawns: [] as Array<[string, string[], Record<string, unknown>]>,
@@ -58,13 +59,20 @@ vi.mock('node:child_process', () => {
 const VAULT = "E:\\Test Vault & (x) '中文'";
 const PWSH = 'C:\\Program Files\\PowerShell\\7\\pwsh.exe';
 
+/** Default finder deps: one verified Program Files pwsh. */
+function finderDeps(
+  probeMajorVersion: () => Promise<number | null> = vi.fn().mockResolvedValue(7),
+): FinderDeps {
+  return {
+    buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
+    probeMajorVersion,
+  };
+}
+
 function makePlugin(overrides: Partial<PluginDeps> = {}): VaultPowerShellPlugin {
   const deps: Partial<PluginDeps> = {
     platform: 'win32',
-    finder: {
-      buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
-      probeMajorVersion: vi.fn().mockResolvedValue(7),
-    },
+    finder: finderDeps(),
     ...overrides,
   };
   const app = {
@@ -76,8 +84,13 @@ function makePlugin(overrides: Partial<PluginDeps> = {}): VaultPowerShellPlugin 
   return new VaultPowerShellPlugin(app as never, {} as never, deps);
 }
 
+/** The plugin's mock vault object (typed loosely; the mock app is a plain object). */
+function pluginVault(plugin: VaultPowerShellPlugin): { adapter: unknown } {
+  return (plugin.app as { vault: { adapter: unknown } }).vault;
+}
+
 function setAdapter(plugin: VaultPowerShellPlugin, adapter: unknown): void {
-  (plugin.app as { vault: { adapter: unknown } }).vault.adapter = adapter;
+  pluginVault(plugin).adapter = adapter;
 }
 
 /** Drain the event loop so mocked spawn setImmediates settle. */
@@ -253,9 +266,7 @@ describe('VaultPowerShellPlugin', () => {
     it('fails gracefully when no target path can be resolved', async () => {
       const plugin = makePlugin();
       setAdapter(plugin, {});
-      const root = getVaultRootPath(
-        (plugin.app as { vault: { adapter: unknown } }).vault as never,
-      );
+      const root = getVaultRootPath(pluginVault(plugin) as never);
       expect(root).toBeNull();
       await plugin.openPowerShell(root);
       expect(state.notices).toEqual(['Unable to resolve the local vault path.']);
@@ -263,12 +274,7 @@ describe('VaultPowerShellPlugin', () => {
     });
 
     it('shows a notice when no PowerShell 7+ is found', async () => {
-      const plugin = makePlugin({
-        finder: {
-          buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
-          probeMajorVersion: vi.fn().mockResolvedValue(null),
-        },
-      });
+      const plugin = makePlugin({ finder: finderDeps(vi.fn().mockResolvedValue(null)) });
       await plugin.openPowerShell(VAULT);
       expect(state.notices).toEqual([
         'PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.',
@@ -290,12 +296,7 @@ describe('VaultPowerShellPlugin', () => {
 
     it('falls back to the direct pwsh spawn when wt.exe is missing', async () => {
       const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({
-        finder: {
-          buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
-          probeMajorVersion: probe,
-        },
-      });
+      const plugin = makePlugin({ finder: finderDeps(probe) });
       spawnState.failSpawnCount = 1; // wt.exe ENOENT -> launcher falls back
       await plugin.openPowerShell(VAULT);
       expect(state.notices).toHaveLength(0);
@@ -308,12 +309,7 @@ describe('VaultPowerShellPlugin', () => {
 
     it('clears the cache and retries exactly once when both wt and pwsh fail with ENOENT', async () => {
       const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({
-        finder: {
-          buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
-          probeMajorVersion: probe,
-        },
-      });
+      const plugin = makePlugin({ finder: finderDeps(probe) });
       spawnState.failSpawnCount = 2; // wt ENOENT + fallback pwsh ENOENT
       await plugin.openPowerShell(VAULT);
       // First click: wt + fallback pwsh. Cache cleared, one re-verify, second
@@ -326,12 +322,7 @@ describe('VaultPowerShellPlugin', () => {
 
     it('shows the start-failed notice when the retry also fails', async () => {
       const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({
-        finder: {
-          buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
-          probeMajorVersion: probe,
-        },
-      });
+      const plugin = makePlugin({ finder: finderDeps(probe) });
       spawnState.failSpawnCount = 4; // every spawn in both attempts fails
       await plugin.openPowerShell(VAULT);
       // Attempt 1: wt + fallback pwsh. Attempt 2 (retry): wt + fallback pwsh.
@@ -344,12 +335,7 @@ describe('VaultPowerShellPlugin', () => {
 
     it('shows the not-found notice when re-verification after ENOENT finds nothing', async () => {
       const probe = vi.fn().mockResolvedValueOnce(7).mockResolvedValueOnce(null);
-      const plugin = makePlugin({
-        finder: {
-          buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
-          probeMajorVersion: probe,
-        },
-      });
+      const plugin = makePlugin({ finder: finderDeps(probe) });
       spawnState.failSpawnCount = 2; // wt + pwsh both ENOENT on the first click
       await plugin.openPowerShell(VAULT);
       expect(spawnState.spawns).toHaveLength(2);
@@ -361,12 +347,7 @@ describe('VaultPowerShellPlugin', () => {
 
     it('opens a new window on every click once pwsh is cached (no cooldown)', async () => {
       const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({
-        finder: {
-          buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
-          probeMajorVersion: probe,
-        },
-      });
+      const plugin = makePlugin({ finder: finderDeps(probe) });
       await plugin.openPowerShell(VAULT);
       await plugin.openPowerShell(VAULT);
       await plugin.openPowerShell(VAULT);
@@ -377,12 +358,7 @@ describe('VaultPowerShellPlugin', () => {
 
     it('shows the semicolon notice and creates no process for ";" paths', async () => {
       const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({
-        finder: {
-          buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
-          probeMajorVersion: probe,
-        },
-      });
+      const plugin = makePlugin({ finder: finderDeps(probe) });
       await plugin.openPowerShell('E:\\Odd;Vault');
       expect(state.notices).toEqual([
         'PowerShell cannot be opened for paths containing a semicolon (;).',
@@ -395,12 +371,7 @@ describe('VaultPowerShellPlugin', () => {
 
     it('shares the PowerShellFinder cache between the ribbon and the context menu', async () => {
       const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({
-        finder: {
-          buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
-          probeMajorVersion: probe,
-        },
-      });
+      const plugin = makePlugin({ finder: finderDeps(probe) });
       await plugin.openPowerShell(VAULT); // ribbon -> vault root
       await plugin.openPowerShell(`${VAULT}\\Sub`); // context menu -> folder
       expect(probe).toHaveBeenCalledTimes(1); // verified once, shared
@@ -415,12 +386,7 @@ describe('VaultPowerShellPlugin', () => {
             releaseProbe = resolve;
           }),
       );
-      const plugin = makePlugin({
-        finder: {
-          buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
-          probeMajorVersion: probe,
-        },
-      });
+      const plugin = makePlugin({ finder: finderDeps(probe) });
       const ribbon = plugin.openPowerShell(VAULT);
       const menu = plugin.openPowerShell(`${VAULT}\\Sub`);
       expect(probe).toHaveBeenCalledTimes(1); // single flight across entries

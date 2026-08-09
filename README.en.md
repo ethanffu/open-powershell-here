@@ -116,12 +116,12 @@ npm run verify  # lint + typecheck + test + build
 
 ## Current Project Status
 
-`context-menu entry added; GUI acceptance pending`
+`context-menu entry manually verified (core items); edge items pending`
 
 - Code, build and automated tests are complete; Windows process-creation behavior was verified with scripted experiments (MANUAL_TESTS.md "Platform behavior findings").
 - Verified in real Obsidian (2026-08-08): the Windows Terminal-hosted build's ribbon entry opens a working interactive PowerShell window; `Get-Location` equals the vault root, version >= 7, the session survives closing Obsidian, and the plugin auto-loads after restart.
-- The folder context-menu entry (`Open PowerShell here`) and the semicolon-path notice are new as of 2026-08-09 and have **not yet been manually accepted in real Obsidian** — see MANUAL_TESTS.md.
-- Remaining low-priority checklist items (special-character paths on the real machine, wt-missing fallback, UNC, missing-install scenarios) were not individually verified; several are already covered by scripted experiments or automated tests — see MANUAL_TESTS.md.
+- Verified in real Obsidian (2026-08-09): the folder context-menu entry works — right-clicking a single folder shows `Open PowerShell here` (terminal icon), and clicking it opens an interactive PowerShell in that folder's real absolute path (`Get-Location` correct).
+- Edge items — semicolon-folder notice, vault root folder right-click, no item for files, no duplicates after plugin reload — have **not been individually verified on the real machine yet** (see MANUAL_TESTS.md #28–#33); remaining low-priority items (special-character paths on the real machine, wt-missing fallback, UNC, missing-install scenarios) are likewise unverified individually, several already covered by scripted experiments or automated tests.
 
 ## License
 

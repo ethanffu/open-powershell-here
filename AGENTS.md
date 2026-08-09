@@ -33,7 +33,7 @@
 - `conhost.exe pwsh …` 方案实测**参数丢失**（pwsh 以无参数启动），不可用；`wt.exe` 的 `-d`/`-WorkingDirectory` 均会被 `;` 拆分（wt 命令分隔符），`&`/空格/括号/单引号/中文路径均实测安全。
 - **`wt.exe` 宿主方案（已授权、已实测）**：从无控制台（DETACHED 模拟）父进程 `spawn('wt.exe', ['-w','0', pwshPath, '-WorkingDirectory', targetDir])` → pwsh `IsInputRedirected=False`（真实控制台句柄、完全可交互）、`-WorkingDirectory` 安全送达特殊字符路径、会话独立于父进程存活。
 - 因此正式会话采用：默认 `wt.exe` 宿主（`stdio:'ignore'`，wt 是启动器，句柄无关）；`wt.exe` ENOENT 时回退直连 `spawn(pwsh, …, stdio:'inherit')`。**目标路径含 `;` 时不启动任何进程（2026-08-09 用户变更，见硬性约束 3）。不得把宿主模式改回直连作为默认，也不得用 `cmd.exe`/`conhost.exe`/`shell:true`。**
-- 真实 Obsidian GUI 人工验收：Ribbon 的 wt 宿主版本用户已实测确认可用（`.test-vault`）；文件夹右键菜单入口与分号报错行为**待用户重测**。`MANUAL_TESTS.md` 未执行项保持“未执行/not performed”，不得伪造。
+- 真实 Obsidian GUI 人工验收：Ribbon 的 wt 宿主版本（2026-08-08）与文件夹右键菜单入口（2026-08-09，`Open PowerShell here` 在目标文件夹打开、`Get-Location` 正确）用户均已实测确认可用（`.test-vault`）；分号报错等边缘项仍待验证。`MANUAL_TESTS.md` 未执行项保持“未执行/not performed”，不得伪造。
 
 ## 质量与流程
 

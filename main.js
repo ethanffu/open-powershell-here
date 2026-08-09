@@ -32,22 +32,26 @@ var import_obsidian2 = require("obsidian");
 
 // src/vault-path.ts
 var import_obsidian = require("obsidian");
-function getVaultRootPath(vault) {
+function getLocalAdapter(vault) {
   if (vault === null || vault === void 0) {
     return null;
   }
   const adapter = vault.adapter;
-  if (!(adapter instanceof import_obsidian.FileSystemAdapter)) {
+  return adapter instanceof import_obsidian.FileSystemAdapter ? adapter : null;
+}
+function getVaultRootPath(vault) {
+  const adapter = getLocalAdapter(vault);
+  if (adapter === null) {
     return null;
   }
   return adapter.getBasePath();
 }
 function getFolderPath(vault, folder) {
-  if (vault === null || vault === void 0 || folder === null || folder === void 0) {
+  if (folder === null || folder === void 0) {
     return null;
   }
-  const adapter = vault.adapter;
-  if (!(adapter instanceof import_obsidian.FileSystemAdapter)) {
+  const adapter = getLocalAdapter(vault);
+  if (adapter === null) {
     return null;
   }
   const normalized = folder.path.replace(/^\/+|\/+$/g, "");

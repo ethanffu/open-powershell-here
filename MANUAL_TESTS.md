@@ -5,7 +5,7 @@
 ## 当前状态
 
 ```
-context-menu entry added; GUI acceptance pending
+context-menu entry manually verified (core items); edge items pending
 ```
 
 - 真实 Obsidian GUI 验收（2026-08-08 用户实测，Ribbon 入口）：**核心项与主要扩展项已通过**。
@@ -13,7 +13,8 @@ context-menu entry added; GUI acceptance pending
   - wt.exe 宿主修复版：可正常打开 PowerShell 窗口、可正常输入输出、`Get-Location` 为 vault 根目录、版本 ≥ 7、关闭 Obsidian 后会话继续运行。
   - 插件自动启用：`.test-vault` 打开后自动加载（受限模式关闭后生效；`install:test` 同时幂等写入 `community-plugins.json`）。
   - `Test-Path $PROFILE` 为 False 属正常（用户从未创建 profile 文件），插件未阻断 Profile 加载（正式会话不带 `-NoProfile`）。
-- **2026-08-09 新增功能（文件夹右键菜单入口、分号路径报错）尚未在真实 Obsidian 中人工验收**，下方清单中标为“未执行”。不得把自动化测试结果当作真实 GUI 验收。
+- **文件夹右键菜单入口（2026-08-09 用户实测，新增功能）**：右键单个文件夹出现且只有一项 `Open PowerShell here`（终端图标），点击后在**该文件夹的真实绝对路径**打开可交互 PowerShell，`Get-Location` 正确。对应清单 #25–#27 已通过。
+- **尚未真实验收的边缘项**：分号文件夹报错（#31）、vault 根文件夹右键（#28）、普通文件右键不显示（#29）、特殊字符子文件夹（#30）、插件重载无重复项（#32）、Ribbon 与右键交替（#33）等仍为“未执行”，不得把自动化测试当作真实 GUI 验收。
 - 剩余低优先级项（特殊字符 vault 路径、wt 缺失回退、UNC、未安装场景等）未在用户环境逐一验证，见下方清单。
 - 脚本化 Windows 平台实验：已执行（2026-08-06/08，Windows 桌面会话 + pwsh 7.6.4 MSIX + Node 24.16.0），结论见下。
 
@@ -53,9 +54,9 @@ context-menu entry added; GUI acceptance pending
 | 22 | wt 宿主窗口（修复版） | 点击 Ribbon（Windows Terminal 已安装） | 出现新的 WT 窗口且 pwsh 不闪退 | **通过**（2026-08-08，可交互） |
 | 23 | wt 缺失回退 | 临时移除 wt 或 PATH 中无 wt | 回退直连（终端启动场景可用） | 未执行（自动化测试覆盖） |
 | 24 | 插件自动启用 | 重启 Obsidian 后打开 vault | 插件自动加载（无需手动开启） | **通过**（2026-08-08，受限模式关闭后生效） |
-| 25 | **右键单个嵌套文件夹**（新增） | 在文件资源管理器中右键一个嵌套文件夹（如 `.test-vault` 下的子文件夹） | 菜单出现且只有一项 `Open PowerShell here` | 未执行 |
-| 26 | **菜单文字与图标**（新增） | 右键文件夹，观察菜单项 | 文字为 `Open PowerShell here`，图标为终端（Lucide `terminal`） | 未执行 |
-| 27 | **右键文件夹初始目录**（新增） | 点击 `Open PowerShell here` 后输入 `Get-Location` | 等于被右键文件夹的真实绝对路径 | 未执行 |
+| 25 | **右键单个嵌套文件夹**（新增） | 在文件资源管理器中右键一个嵌套文件夹（如 `.test-vault` 下的子文件夹） | 菜单出现且只有一项 `Open PowerShell here` | **通过**（2026-08-09 用户实测） |
+| 26 | **菜单文字与图标**（新增） | 右键文件夹，观察菜单项 | 文字为 `Open PowerShell here`，图标为终端（Lucide `terminal`） | **通过**（2026-08-09 用户实测） |
+| 27 | **右键文件夹初始目录**（新增） | 点击 `Open PowerShell here` 后输入 `Get-Location` | 等于被右键文件夹的真实绝对路径 | **通过**（2026-08-09 用户实测） |
 | 28 | **右键 vault 根文件夹**（新增） | 右键文件列表顶部/空白处（能触发文件夹菜单的根位置） | `Open PowerShell here` 存在，点击后在 vault 根目录打开 | 未执行 |
 | 29 | **右键普通文件不显示**（新增） | 右键一个普通笔记文件 | 菜单中**没有** `Open PowerShell here` | 未执行 |
 | 30 | **特殊字符子文件夹**（新增） | 右键路径含空格/中文/`&`/括号/单引号的子文件夹 | 菜单项存在，点击后 `Get-Location` 为该文件夹 | 未执行 |
@@ -95,4 +96,4 @@ context-menu entry added; GUI acceptance pending
 
 完成某项后，把状态改为 `通过` 并注明日期与机器信息；新增发现追加到“平台行为发现”。
 
-当前（2026-08-09）：Ribbon 入口的核心项与主要扩展项已通过真实 GUI 验收；**新增的文件夹右键菜单入口与分号报错行为尚未在真实 Obsidian 中执行**（#25–#33 全部“未执行”）。剩余未执行项均为低优先级/罕见场景（特殊字符路径的实机验证、wt 缺失回退、UNC、未安装场景），其中多项已有脚本化实验或自动化测试覆盖。
+当前（2026-08-09）：Ribbon 入口的核心项与主要扩展项已通过真实 GUI 验收；文件夹右键菜单入口的核心流程（#25–#27）用户已实测通过。**分号报错（#31）等边缘项仍未在真实 Obsidian 中执行**（#28–#33 中除 #25–#27 外均为“未执行”）。剩余未执行项均为低优先级/罕见场景（特殊字符路径的实机验证、wt 缺失回退、UNC、未安装场景），其中多项已有脚本化实验或自动化测试覆盖。
