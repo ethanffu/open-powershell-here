@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-在 Obsidian 中打开本机 **PowerShell 7 或更高版本**：点击左侧 Ribbon 按钮在 vault 根目录打开，或在文件资源管理器中右键单个文件夹，从菜单选择 **Open PowerShell here** 在该文件夹打开。
+在 Obsidian 中打开本机 **PowerShell 7 或更高版本**：点击左侧 Ribbon 按钮在 vault 根目录打开，或在 Obsidian 左侧**文件列表**中右键**单个文件夹**，从菜单选择 **Open PowerShell here** 在该文件夹打开。
 
 > 从最新 GitHub Release 安装（见下文）或从源码构建。插件尚未发布到 Obsidian 社区市场。
 
@@ -14,7 +14,7 @@ Open PowerShell here 是一个轻量级 Obsidian 桌面插件，提供两个入�
 
 - **Ribbon 按钮**（Lucide `terminal` 图标，tooltip：`Open PowerShell at vault root`）：在当前 vault 根目录打开 PowerShell。
 - **Style Settings 可选集成**：安装 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) 插件后，可在 设置 → Style Settings → Open PowerShell here 中打开 **Hide the ribbon button** 隐藏左侧 Ribbon 按钮（仅隐藏按钮，功能保留；单文件夹右键菜单入口不受影响）。
-- **单文件夹右键菜单**：在 Obsidian 文件资源管理器中右键**单个文件夹**，菜单显示 **`Open PowerShell here`**（Lucide `terminal` 图标），点击后在该文件夹的真实 Windows 绝对路径中打开 PowerShell。vault 根文件夹同样支持。右键普通文件、多选时不显示该菜单项。
+- **单文件夹右键菜单**：在 Obsidian 左侧**文件列表**中右键**单个文件夹**，菜单显示 **`Open PowerShell here`**（Lucide `terminal` 图标），点击后在该文件夹的真实 Windows 绝对路径中打开 PowerShell。vault 根文件夹同样支持。右键普通文件、多选时不显示该菜单项。
 - 只启动经过版本验证的 `pwsh.exe`；正式会话默认以 Windows Terminal（`wt.exe`）作为控制台窗口宿主（仅宿主用途，用户已授权）。不调用 `powershell.exe`、`cmd.exe`、`conhost.exe`、`start`、WSL、Git Bash 或其他 Shell/终端程序，不使用 `shell: true`。
 - PowerShell 查找顺序：
   1. `pwsh.exe`（由 Windows 使用 Obsidian 进程继承的 `PATH` 解析）
@@ -51,7 +51,7 @@ Open PowerShell here 是一个轻量级 Obsidian 桌面插件，提供两个入�
 1. 安装插件（见下方安装方式）。
 2. 重启 Obsidian 或重新加载插件。
 3. 方式一：点击左侧 Ribbon 中的终端图标，在 vault 根目录打开 PowerShell。
-4. 方式二：在左侧文件资源管理器中右键**单个文件夹**（包括 vault 根文件夹），点击 **Open PowerShell here**，在该文件夹打开 PowerShell。
+4. 方式二：在 Obsidian 左侧**文件列表**中右键**单个文件夹**（包括 vault 根文件夹），点击 **Open PowerShell here**，在该文件夹打开 PowerShell。
 5. （可选）不想看到 Ribbon 按钮时：安装 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) 插件，在其设置 → Open PowerShell here 中打开 **Hide the ribbon button**。
 
 失败时显示简短、可操作的英文 Notice，详细错误写入 Obsidian 开发者控制台（`Ctrl+Shift+I`）。成功时不显示 Notice。
@@ -137,6 +137,10 @@ npm run verify  # lint + typecheck + test + build 全量验证
 - 用户在真实 Obsidian 中实测（2026-08-09）：文件夹右键菜单入口可正常使用——右键单个文件夹出现 `Open PowerShell here`（终端图标），点击后在该文件夹真实绝对路径打开可交互 PowerShell，`Get-Location` 正确。
 - 分号文件夹报错、vault 根文件夹右键、文件右键不显示、插件重载去重等边缘项**尚未逐一实机验证**（见 MANUAL_TESTS.md #28–#33）；剩余低优先级项（特殊字符路径实机验证、wt 缺失回退、UNC、未安装场景等）同样未逐一实机验证，其中多项已有脚本化实验/自动化测试覆盖。
 - 用户要求移除 Ribbon 入口的计划已撤销（2026-08-10）：保留 Ribbon 按钮，改为 Style Settings 集成（`styles.css` 提供 **Hide the ribbon button** 开关）。首次实现（曾以 v0.3.0/v0.3.1 名义发布后均撤销）在用户环境中不生效，**真实根因**：Style Settings 的 `class-toggle` 把**设置项 `id`**（而非 `addClass`，该属性被忽略）加到 `<body>`，此前 CSS 选择器与 body 类名不匹配。修复：设置项 `id` 即类名；CSS 双选择器（自定义 class + tooltip `aria-label`）+ `!important`；并在 `main.ts` 中用 MutationObserver 监听 body 类、以内联样式强制隐藏按钮（不依赖任何 CSS/DOM 假设）。**Release 待用户实机确认后另行发布（用户指示：经同意才 release，版本号 0.3.0）。**
+
+## 参与贡献
+
+欢迎提交 Issue 和 Pull Request。遇到问题或有改进想法，欢迎开 [Issue](https://github.com/ethanffu/vault-powershell/issues)；想直接改代码，欢迎 fork 后提 PR——提交前请先运行 `npm run verify`。
 
 ## License
 

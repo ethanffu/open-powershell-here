@@ -2,7 +2,7 @@
 
 [简体中文](README.zh.md)
 
-Open your local **PowerShell 7 or later** from Obsidian: click the left ribbon button to open it at the vault root, or right-click a single folder in the file explorer and choose **Open PowerShell here** to open it in that folder.
+Open your local **PowerShell 7 or later** from Obsidian: click the left ribbon button to open it at the vault root, or right-click a single folder in Obsidian's file explorer (the left sidebar file list) and choose **Open PowerShell here** to open it in that folder (the vault root folder works too).
 
 > Install from the latest GitHub Release (see below) or build from source. The plugin is not yet published to the Obsidian community marketplace.
 
@@ -137,6 +137,10 @@ npm run verify  # lint + typecheck + test + build
 - Verified in real Obsidian (2026-08-09): the folder context-menu entry works — right-clicking a single folder shows `Open PowerShell here` (terminal icon), and clicking it opens an interactive PowerShell in that folder's real absolute path (`Get-Location` correct).
 - Edge items — semicolon-folder notice, vault root folder right-click, no item for files, no duplicates after plugin reload — have **not been individually verified on the real machine yet** (see MANUAL_TESTS.md #28–#33); remaining low-priority items (special-character paths on the real machine, wt-missing fallback, UNC, missing-install scenarios) are likewise unverified individually, several already covered by scripted experiments or automated tests.
 - The plan to remove the ribbon entry was reversed (2026-08-10): the ribbon button stays, and the plugin ships a `styles.css` Style Settings block with a single **Hide the ribbon button** toggle. The first attempts (published as v0.3.0/v0.3.1 and both revoked) did not hide the button in the user's environment. **Actual root cause:** for `class-toggle`, Style Settings applies the **setting `id`** (not `addClass`, which is ignored) to `<body>`; the previous CSS selector never matched the body class. Fix: the setting id IS the class name; the CSS uses two selectors (custom class + tooltip `aria-label`) with `!important`; and `main.ts` additionally enforces the hide via inline style through a MutationObserver on the body class, so hiding does not depend on any CSS/DOM assumption. **Release is pending the user's real-machine confirmation (per user instruction: release only after approval; version 0.3.0).**
+
+## Contributing
+
+Issues and pull requests are welcome. Found a bug or have an idea? Open an [issue](https://github.com/ethanffu/vault-powershell/issues). Want to change the code yourself? Fork the repo and open a pull request — please run `npm run verify` before submitting.
 
 ## License
 

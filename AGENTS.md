@@ -6,7 +6,7 @@
 
 - 轻量 Windows 桌面 Obsidian 插件，提供**两个入口**（用户 2026-08-09 明确批准的约束变更，覆盖旧的“Ribbon 唯一入口”约束）：
   1. **Ribbon 按钮**：打开本机 PowerShell 7+（`pwsh.exe`），初始工作目录为当前 vault 根目录；
-  2. **单文件夹右键菜单**（文件资源管理器中右键单个文件夹，菜单项 `Open PowerShell here`）：以被右键文件夹的真实 Windows 绝对路径打开 PowerShell 7+。
+  2. **单文件夹右键菜单**（Obsidian 左侧文件列表中右键单个文件夹，菜单项 `Open PowerShell here`）：以被右键文件夹的真实 Windows 绝对路径打开 PowerShell 7+。
 - **Ribbon 按钮只允许隐藏、不允许移除**（2026-08-10 用户明确指示：撤销“移除 Ribbon”的计划，改为适配 Style Settings）：`styles.css` 的 `@settings` 块只含**一个扁平选项** **Hide the ribbon button**（`class-toggle`，**不得添加 “Ribbon button” 分组标题**）。
   - **关键机制（踩坑后确认，读 Style Settings 源码验证）**：`class-toggle` 加到 `<body>` 的类名是**设置项 `id`**（`SettingsManager.ts` 中 `document.body.classList.add(setting.id)`；`addClass` 属性已被新版 Style Settings 忽略）。因此 `id` 必须等于想要匹配的 body 类名，CSS 选择器与 `main.ts` 的 `HIDE_RIBBON_BODY_CLASS` 常量必须保持一致。
   - **双重保障**：CSS 双选择器（`.vault-powershell-ribbon` + `.clickable-icon[aria-label="Open PowerShell at vault root"]`，`display: none !important`）；同时 `main.ts` 用 `MutationObserver` 监听 body class 变化，以内联样式强制隐藏/恢复按钮（不依赖任何 CSS/DOM 假设，Obsidian 1.13.6 实测环境同样适用）。

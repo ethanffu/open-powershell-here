@@ -55,7 +55,7 @@ context-menu entry manually verified (core items); edge items pending
 | 22 | wt 宿主窗口（修复版） | 点击 Ribbon（Windows Terminal 已安装） | 出现新的 WT 窗口且 pwsh 不闪退 | **通过**（2026-08-08，可交互） |
 | 23 | wt 缺失回退 | 临时移除 wt 或 PATH 中无 wt | 回退直连（终端启动场景可用） | 未执行（自动化测试覆盖） |
 | 24 | 插件自动启用 | 重启 Obsidian 后打开 vault | 插件自动加载（无需手动开启） | **通过**（2026-08-08，受限模式关闭后生效） |
-| 25 | **右键单个嵌套文件夹**（新增） | 在文件资源管理器中右键一个嵌套文件夹（如 `.test-vault` 下的子文件夹） | 菜单出现且只有一项 `Open PowerShell here` | **通过**（2026-08-09 用户实测） |
+| 25 | **右键单个嵌套文件夹**（新增） | 在 Obsidian 左侧文件列表中右键一个嵌套文件夹（如 `.test-vault` 下的子文件夹） | 菜单出现且只有一项 `Open PowerShell here` | **通过**（2026-08-09 用户实测） |
 | 26 | **菜单文字与图标**（新增） | 右键文件夹，观察菜单项 | 文字为 `Open PowerShell here`，图标为终端（Lucide `terminal`） | **通过**（2026-08-09 用户实测） |
 | 27 | **右键文件夹初始目录**（新增） | 点击 `Open PowerShell here` 后输入 `Get-Location` | 等于被右键文件夹的真实绝对路径 | **通过**（2026-08-09 用户实测） |
 | 28 | **右键 vault 根文件夹**（新增） | 右键文件列表顶部/空白处（能触发文件夹菜单的根位置） | `Open PowerShell here` 存在，点击后在 vault 根目录打开 | 未执行 |
