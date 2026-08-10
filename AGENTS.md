@@ -59,6 +59,7 @@
 
 - `MANUAL_TESTS.md`：真实 Windows 人工验收清单与平台行为发现。
 - `README.md`（英文，默认）/ `README.zh.md`（简体中文）：用户文档（必须同步，两文件仅在语言与互链上不同）。
+- `CONTRIBUTING.md` / `CODE_OF_CONDUCT.md` / `.github/`（Issue/PR 模板）：公开仓库的贡献指南、行为准则与模板。
 - `AGENTS.local.md`：维护者本地运维指引（deploy key、推送/发布命令），**不提交**（已 gitignore），仅本机工作区存在。
 - `.github/workflows/ci.yml`：Windows CI（lint/typecheck/test/build/`main.js` 同步检查）。
 - `src/`：`main.ts`（生命周期、Ribbon 与单文件夹右键菜单、共享启动流程）、`vault-path.ts`（vault 根路径与文件夹路径解析）、`powershell/{candidates,version-probe,launcher,finder,types}.ts`。`styles.css`：Style Settings `@settings` 块（隐藏 Ribbon 开关）与对应 CSS 规则。

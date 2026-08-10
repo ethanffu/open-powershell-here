@@ -1,9 +1,10 @@
 {
   "id": "open-powershell-here",
   "name": "Open PowerShell Here",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "minAppVersion": "1.0.0",
   "description": "Open PowerShell 7+ at the root or any folder of the current Obsidian vault.",
   "author": "ethanfu0124-bit",
-  "isDesktopOnly": true
+  "isDesktopOnly": true,
+  "authorUrl": "https://github.com/ethanffu"
 }

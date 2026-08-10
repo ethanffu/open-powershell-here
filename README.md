@@ -2,6 +2,10 @@
 
 [简体中文](README.zh.md)
 
+![CI](https://img.shields.io/github/actions/workflow/status/ethanffu/open-powershell-here/ci.yml?branch=main&label=CI)
+![Release](https://img.shields.io/github/v/release/ethanffu/open-powershell-here)
+![License](https://img.shields.io/github/license/ethanffu/open-powershell-here)
+
 Open your local **PowerShell 7 or later** from Obsidian: click the left ribbon button to open it at the vault root, or right-click a single folder in Obsidian's file explorer (the left sidebar file list) and choose **Open PowerShell here** to open it in that folder (the vault root folder works too).
 
 > Install from the latest GitHub Release (see below) or build from source. The plugin is not yet published to the Obsidian community marketplace.
@@ -62,8 +66,8 @@ The repository is not yet published to the Obsidian community marketplace; insta
 
 **Option A: Download the zip from GitHub Releases (recommended, no CLI needed)**
 
-1. In a browser, open the repository's Releases page: `https://github.com/ethanffu/open-powershell-here/releases` (or go directly to the v0.3.0 assets page).
-2. Download `vault-powershell-0.3.0.zip` (legacy name) and unzip it — you get a `vault-powershell/` folder.
+1. In a browser, open the repository's Releases page: `https://github.com/ethanffu/open-powershell-here/releases`.
+2. Download the latest release zip and unzip it — you get the plugin folder (the v0.3.0 zip is still named `vault-powershell-0.3.0.zip`).
 3. Open your vault folder and go to `.obsidian/plugins/` (create it if missing).
 4. Copy the whole unzipped plugin folder into it.
 5. In Obsidian settings → Community plugins, enable **Open PowerShell Here** (turn off Restricted Mode first if prompted).
@@ -75,7 +79,11 @@ The repository is not yet published to the Obsidian community marketplace; insta
 1. Run `npm run build` in the project root (or use the committed `main.js`).
 2. Same as Option A steps 3–5: copy `main.js`, `manifest.json` and `styles.css` (the Style Settings toggle depends on it — **do not skip it**) into `.obsidian/plugins/open-powershell-here/` and enable the plugin.
 
-> **Note (plugin id change):** the plugin id changed from `vault-powershell` to `open-powershell-here` on 2026-08-10 (before the rename was released). If you installed any earlier version, remove the old `.obsidian/plugins/vault-powershell/` folder after installing this one — the plugin keeps no settings, so nothing is lost.
+> **Note (plugin id change):** the plugin id changed from `vault-powershell` to `open-powershell-here` on 2026-08-10. If you installed any earlier version, remove the old `.obsidian/plugins/vault-powershell/` folder after installing this one — the plugin keeps no settings, so nothing is lost.
+
+## Beta testing with BRAT
+
+Install the [BRAT](https://obsidian.md/plugins?id=brat) plugin, add the beta repository `ethanffu/open-powershell-here`, then enable **Open PowerShell Here** to test the latest commit without waiting for a release.
 
 ## Building from Source
 
@@ -142,7 +150,7 @@ npm run verify  # lint + typecheck + test + build
 
 ## Contributing
 
-Issues and pull requests are welcome. Found a bug or have an idea? Open an [issue](https://github.com/ethanffu/open-powershell-here/issues). Want to change the code yourself? Fork the repo and open a pull request — please run `npm run verify` before submitting.
+Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the development setup and guidelines. Found a bug or have an idea? Open an [issue](https://github.com/ethanffu/open-powershell-here/issues). Want to change the code yourself? Fork the repo and open a pull request — please run `npm run verify` before submitting.
 
 ## License
 
