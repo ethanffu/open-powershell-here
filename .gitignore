@@ -17,6 +17,9 @@ npm-debug.log*
 .env.*
 !.env.example
 
+# Maintainer-local ops notes (never committed)
+AGENTS.local.md
+
 # OS junk
 .DS_Store
 Thumbs.db

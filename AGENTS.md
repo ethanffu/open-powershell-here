@@ -47,13 +47,9 @@
   3. 检查并同步中英文 README（`README.md` 英文为默认、`README.zh.md` 简体中文）、`MANUAL_TESTS.md`、manifest 与 GitHub About/Topics（事实变化才改，不制造无意义差异）；
   4. 检查暂存区无敏感文件（`.env`、token、凭据、`.test-vault`、node_modules、日志）；
   5. `git add -A`；有变化才提交（Conventional Commits，如 `feat:`/`fix:`/`test:`/`docs:`/`chore:`）；无变化不得空提交；
-  6. 推送 `origin/main`；确认远端 HEAD 与本地一致；`git status` 干净后才回复。
-- **禁止**：`git push --force` / `--force-with-lease`、改写已推送历史、删除远端分支、改仓库为 Public、覆盖/删除已有远端、跳过 Git hooks、提交凭据。
-- **推送方式（重要）**：当前 GitHub 账号的 OAuth token 缺少 `workflow` scope（`gh auth status` 确认），HTTPS 推送含 `.github/workflows/` 的提交会被拒绝。仓库已配置仓库级 SSH deploy key（`~/.ssh/vault_powershell_deploy`，仅限本仓库、可写）。推送命令：
-  ```bash
-  GIT_SSH_COMMAND="ssh -i ~/.ssh/vault_powershell_deploy -o StrictHostKeyChecking=accept-new" git push origin-ssh main
-  ```
-  `origin`（HTTPS）保留用于 `gh` 读取/API 操作；不要删除 deploy key。若日后的机器上没有该 deploy key，且本次提交不修改 `.github/workflows/`，可用 gh 凭据执行普通 HTTPS 推送（`gh auth setup-git` 后 `git push origin main`）；若 token 日后获得 `workflow` scope（`gh auth refresh -s workflow`），可回归普通 `git push origin main`。
+  6. 推送 `main`（本机推送方式见 `AGENTS.local.md`，不提交）；确认远端 HEAD 与本地一致；`git status` 干净后才回复。
+- **禁止**：`git push --force` / `--force-with-lease`、改写已推送历史、删除远端分支、覆盖/删除已有远端、跳过 Git hooks、提交凭据。
+- 推送与发布由维护者执行（维护者本地运维细节见 `AGENTS.local.md`，该文件不提交、不进入公开仓库）；CI 会检查 `main.js` 与源码同步。
 - 构建或测试失败时不得创建声称“已完成”的提交；用户要求保存进度时可提交 WIP 并明确说明。
 - 版本发布（tag/Release/版本号/versions.json 更新）只在用户明确要求时进行；普通提交不创建 tag、不创建 Release、不升版本号。**用户 2026-08-10 补充指示：功能经用户实机确认后才可发布 Release；版本号遵循 0.1.1 → 0.2.0 → 0.3.0 的逐次规律（勿跳号）。**
 - 自动化验证、构建、真实 Windows GUI 验证、Git 提交、GitHub 推送、README/About 同步必须分开如实报告，不得笼统声称“全部完成”。
@@ -62,6 +58,7 @@
 
 - `MANUAL_TESTS.md`：真实 Windows 人工验收清单与平台行为发现。
 - `README.md`（英文，默认）/ `README.zh.md`（简体中文）：用户文档（必须同步，两文件仅在语言与互链上不同）。
+- `AGENTS.local.md`：维护者本地运维指引（deploy key、推送/发布命令），**不提交**（已 gitignore），仅本机工作区存在。
 - `.github/workflows/ci.yml`：Windows CI（lint/typecheck/test/build/`main.js` 同步检查）。
 - `src/`：`main.ts`（生命周期、Ribbon 与单文件夹右键菜单、共享启动流程）、`vault-path.ts`（vault 根路径与文件夹路径解析）、`powershell/{candidates,version-probe,launcher,finder,types}.ts`。`styles.css`：Style Settings `@settings` 块（隐藏 Ribbon 开关）与对应 CSS 规则。
 - `tests/`：Vitest 测试；`tests/mocks/obsidian.ts` 是 `obsidian` 包（仅类型）的测试替身（见 `vitest.config.ts` 别名），含 Workspace/`file-menu` 事件、Menu/MenuItem、TFolder/TFile、`FileSystemAdapter.getFullPath()` 与 `registerEvent` 生命周期的模拟。
