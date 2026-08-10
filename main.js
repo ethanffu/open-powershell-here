@@ -278,7 +278,7 @@ var RIBBON_TOOLTIP = "Open PowerShell at vault root";
 var HIDE_RIBBON_BODY_CLASS = "hide-vault-powershell-ribbon";
 var MENU_ITEM_TITLE = "Open PowerShell here";
 var MENU_ITEM_ICON = "terminal";
-var NOTICE_NOT_WINDOWS = "Open PowerShell here only supports Obsidian Desktop on Windows.";
+var NOTICE_NOT_WINDOWS = "Open PowerShell Here only supports Obsidian Desktop on Windows.";
 var NOTICE_NO_VAULT_PATH = "Unable to resolve the local vault path.";
 var NOTICE_NOT_FOUND = "PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.";
 var NOTICE_START_FAILED = "PowerShell could not be started. Check the developer console for details.";
@@ -317,7 +317,7 @@ var VaultPowerShellPlugin = class extends import_obsidian2.Plugin {
       buildCandidates: (_c = (_b = deps == null ? void 0 : deps.finder) == null ? void 0 : _b.buildCandidates) != null ? _c : buildCandidates,
       probeMajorVersion: (_e = (_d = deps == null ? void 0 : deps.finder) == null ? void 0 : _d.probeMajorVersion) != null ? _e : probeMajorVersion,
       env: (_f = deps == null ? void 0 : deps.finder) == null ? void 0 : _f.env,
-      debug: (_h = (_g = deps == null ? void 0 : deps.finder) == null ? void 0 : _g.debug) != null ? _h : ((message) => console.debug(`[Open PowerShell here] ${message}`))
+      debug: (_h = (_g = deps == null ? void 0 : deps.finder) == null ? void 0 : _g.debug) != null ? _h : ((message) => console.debug(`[Open PowerShell Here] ${message}`))
     });
   }
   onload() {
@@ -408,14 +408,14 @@ var VaultPowerShellPlugin = class extends import_obsidian2.Plugin {
         return;
       }
       console.error(
-        "[Open PowerShell here] launch failed on retry",
+        "[Open PowerShell Here] launch failed on retry",
         retry.code,
         retry.error
       );
       new import_obsidian2.Notice(NOTICE_START_FAILED);
       return;
     }
-    console.error("[Open PowerShell here] launch failed", outcome.code, outcome.error);
+    console.error("[Open PowerShell Here] launch failed", outcome.code, outcome.error);
     new import_obsidian2.Notice(NOTICE_START_FAILED);
   }
 };

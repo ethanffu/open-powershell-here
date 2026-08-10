@@ -1,4 +1,4 @@
-# AGENTS.md — Open PowerShell here 项目约束
+# AGENTS.md — Open PowerShell Here 项目约束
 
 本文件永久记录本项目（Obsidian 插件 `vault-powershell`）的核心约束。任何 Agent 在继续本项目前必须完整阅读并遵守本文件；如与本文件冲突，以本文件为准；如与用户最新明确指示冲突，以用户指示为准并在提交前说明。
 
@@ -12,7 +12,7 @@
   - **双重保障**：CSS 双选择器（`.vault-powershell-ribbon` + `.clickable-icon[aria-label="Open PowerShell at vault root"]`，`display: none !important`）；同时 `main.ts` 用 `MutationObserver` 监听 body class 变化，以内联样式强制隐藏/恢复按钮（不依赖任何 CSS/DOM 假设，Obsidian 1.13.6 实测环境同样适用）。
   - 安装文档必须要求复制 `styles.css`。不得删除 Ribbon 入口，不得把隐藏做成硬编码（必须可切换）。
 - 仍禁止：命令面板命令、快捷键、设置页、批量（多选）右键菜单（`files-menu`）、普通文件右键菜单、内嵌终端、自动执行脚本。
-- 插件 ID：`vault-powershell`（**安装/更新键，永不更改**）；显示名 **Open PowerShell here**（2026-08-10 用户决定，此前为 “Vault PowerShell”，仅显示名变化，id 与仓库名不变）；主类：`VaultPowerShellPlugin`；当前版本 `0.3.0`；仓库 **Public**（2026-08-10 用户决定公开）；默认分支 `main`。
+- 插件 ID：`vault-powershell`（**安装/更新键，永不更改**）；显示名 **Open PowerShell Here**（2026-08-10 用户决定，此前为 “Vault PowerShell”，仅显示名变化，id 与仓库名不变）；主类：`VaultPowerShellPlugin`；当前版本 `0.3.0`；仓库 **Public**（2026-08-10 用户决定公开）；默认分支 `main`。
 
 ## 硬性约束（不可违反）
 

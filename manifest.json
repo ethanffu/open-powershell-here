@@ -1,6 +1,6 @@
 {
   "id": "vault-powershell",
-  "name": "Open PowerShell here",
+  "name": "Open PowerShell Here",
   "version": "0.3.0",
   "minAppVersion": "1.0.0",
   "description": "Open PowerShell 7+ at the root or any folder of the current Obsidian vault.",
