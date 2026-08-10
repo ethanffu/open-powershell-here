@@ -141,6 +141,16 @@ describe('VaultPowerShellPlugin', () => {
       expect(options.cwd).toBe(VAULT);
       expect(options.shell).toBe(false);
     });
+
+    it('adds a stable CSS class to the ribbon element (Style Settings hook)', () => {
+      const plugin = makePlugin();
+      plugin.onload();
+      expect(state.ribbonCalls).toHaveLength(1);
+      // styles.css hides `.vault-powershell-ribbon` when Style Settings
+      // toggles `body.hide-vault-powershell-ribbon`; the class must be
+      // icon-independent so the CSS survives icon changes.
+      expect(state.ribbonClasses).toContain('vault-powershell-ribbon');
+    });
   });
 
   describe('folder context menu entry', () => {

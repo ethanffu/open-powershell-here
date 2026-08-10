@@ -14,7 +14,7 @@ context-menu entry manually verified (core items); edge items pending
   - 插件自动启用：`.test-vault` 打开后自动加载（受限模式关闭后生效；`install:test` 同时幂等写入 `community-plugins.json`）。
   - `Test-Path $PROFILE` 为 False 属正常（用户从未创建 profile 文件），插件未阻断 Profile 加载（正式会话不带 `-NoProfile`）。
 - **文件夹右键菜单入口（2026-08-09 用户实测，新增功能）**：右键单个文件夹出现且只有一项 `Open PowerShell here`（终端图标），点击后在**该文件夹的真实绝对路径**打开可交互 PowerShell，`Get-Location` 正确。对应清单 #25–#27 已通过。
-- **尚未真实验收的边缘项**：分号文件夹报错（#31）、vault 根文件夹右键（#28）、普通文件右键不显示（#29）、特殊字符子文件夹（#30）、插件重载无重复项（#32）、Ribbon 与右键交替（#33）等仍为“未执行”，不得把自动化测试当作真实 GUI 验收。
+- **尚未真实验收的边缘项**：分号文件夹报错（#31）、vault 根文件夹右键（#28）、普通文件右键不显示（#29）、特殊字符子文件夹（#30）、插件重载无重复项（#32）、Ribbon 与右键交替（#33）、Style Settings 隐藏 Ribbon（#34）等仍为“未执行”，不得把自动化测试当作真实 GUI 验收。
 - 剩余低优先级项（特殊字符 vault 路径、wt 缺失回退、UNC、未安装场景等）未在用户环境逐一验证，见下方清单。
 - 脚本化 Windows 平台实验：已执行（2026-08-06/08，Windows 桌面会话 + pwsh 7.6.4 MSIX + Node 24.16.0），结论见下。
 
@@ -63,6 +63,7 @@ context-menu entry manually verified (core items); edge items pending
 | 31 | **分号子文件夹明确报错**（新增） | 右键路径含 `;` 的子文件夹（如 `E:\Odd;Folder`），点击菜单项 | 显示 Notice：`PowerShell cannot be opened for paths containing a semicolon (;).`，**没有任何窗口/进程启动** | 未执行 |
 | 32 | **插件重载无重复菜单项**（新增） | 禁用→启用插件（或重载 vault），再右键文件夹 | 菜单中仍只有一项 `Open PowerShell here`（无重复项） | 未执行 |
 | 33 | **Ribbon 与右键交替使用**（新增） | 依次点击 Ribbon、右键文件夹点击菜单项、再点 Ribbon | 每次打开一个新会话窗口，工作目录分别正确 | 未执行 |
+| 34 | **Style Settings 隐藏 Ribbon**（新增） | 安装 Style Settings 插件 → 设置 → Style Settings → Vault PowerShell → 打开 **Hide the ribbon button** | 左侧 Ribbon 按钮消失；关闭开关后按钮恢复；右键菜单入口不受影响 | 未执行 |
 
 ## 平台行为发现（脚本化实验，2026-08-06）
 
@@ -96,4 +97,4 @@ context-menu entry manually verified (core items); edge items pending
 
 完成某项后，把状态改为 `通过` 并注明日期与机器信息；新增发现追加到“平台行为发现”。
 
-当前（2026-08-09）：Ribbon 入口的核心项与主要扩展项已通过真实 GUI 验收；文件夹右键菜单入口的核心流程（#25–#27）用户已实测通过。**分号报错（#31）等边缘项仍未在真实 Obsidian 中执行**（#28–#33 中除 #25–#27 外均为“未执行”）。剩余未执行项均为低优先级/罕见场景（特殊字符路径的实机验证、wt 缺失回退、UNC、未安装场景），其中多项已有脚本化实验或自动化测试覆盖。
+当前（2026-08-10）：Ribbon 入口的核心项与主要扩展项已通过真实 GUI 验收；文件夹右键菜单入口的核心流程（#25–#27）用户已实测通过。**分号报错（#31）等边缘项仍未在真实 Obsidian 中执行**（#28–#34 中除 #25–#27 外均为“未执行”）。Style Settings 隐藏 Ribbon（#34）为 2026-08-10 新增项（用户撤销“移除 Ribbon”计划后改为适配 Style Settings），尚未实机验证。剩余未执行项均为低优先级/罕见场景（特殊字符路径的实机验证、wt 缺失回退、UNC、未安装场景），其中多项已有脚本化实验或自动化测试覆盖。

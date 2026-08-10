@@ -13,6 +13,7 @@ Vault PowerShell 是一个轻量级 Obsidian 桌面插件，提供两个入口�
 ## 功能
 
 - **Ribbon 按钮**（Lucide `terminal` 图标，tooltip：`Open PowerShell at vault root`）：在当前 vault 根目录打开 PowerShell。
+- **Style Settings 可选集成**：安装 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) 插件后，可在 设置 → Style Settings → Vault PowerShell 中打开 **Hide the ribbon button** 隐藏左侧 Ribbon 按钮（仅隐藏按钮，功能保留；单文件夹右键菜单入口不受影响）。
 - **单文件夹右键菜单**：在 Obsidian 文件资源管理器中右键**单个文件夹**，菜单显示 **`Open PowerShell here`**（Lucide `terminal` 图标），点击后在该文件夹的真实 Windows 绝对路径中打开 PowerShell。vault 根文件夹同样支持。右键普通文件、多选时不显示该菜单项。
 - 只启动经过版本验证的 `pwsh.exe`；正式会话默认以 Windows Terminal（`wt.exe`）作为控制台窗口宿主（仅宿主用途，用户已授权）。不调用 `powershell.exe`、`cmd.exe`、`conhost.exe`、`start`、WSL、Git Bash 或其他 Shell/终端程序，不使用 `shell: true`。
 - PowerShell 查找顺序：
@@ -32,6 +33,7 @@ Vault PowerShell 是一个轻量级 Obsidian 桌面插件，提供两个入口�
 - **仅支持 PowerShell 7 或更高版本（pwsh）**。不支持 Windows PowerShell 5.1（`powershell.exe`），插件也不会自动下载或安装 PowerShell。
 - 需要本机已安装 PowerShell 7+（Microsoft Store 版、MSI 安装或 `dotnet tool install` 均可，只要 `pwsh.exe` 可被找到）。
 - vault 必须是本地文件系统 vault（`FileSystemAdapter`）；远程/非本地 vault 不显示文件夹右键菜单项。
+- （可选）隐藏 Ribbon 按钮需要第三方插件 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings)。
 
 ## 使用方式
 
@@ -39,6 +41,7 @@ Vault PowerShell 是一个轻量级 Obsidian 桌面插件，提供两个入口�
 2. 重启 Obsidian 或重新加载插件。
 3. 方式一：点击左侧 Ribbon 中的终端图标，在 vault 根目录打开 PowerShell。
 4. 方式二：在左侧文件资源管理器中右键**单个文件夹**（包括 vault 根文件夹），点击 **Open PowerShell here**，在该文件夹打开 PowerShell。
+5. （可选）不想看到 Ribbon 按钮时：安装 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) 插件，在其设置 → Vault PowerShell 中打开 **Hide the ribbon button**。
 
 失败时显示简短、可操作的英文 Notice，详细错误写入 Obsidian 开发者控制台（`Ctrl+Shift+I`）。成功时不显示 Notice。
 
@@ -48,8 +51,8 @@ Vault PowerShell 是一个轻量级 Obsidian 桌面插件，提供两个入口�
 
 **方式 A：从 GitHub Release 下载 zip（推荐，无需命令行）**
 
-1. 用浏览器打开仓库 Release 页面（需登录 GitHub）：`https://github.com/ethanffu/vault-powershell/releases`（或直接访问 v0.2.0 资产页）。
-2. 下载 `vault-powershell-0.2.0.zip`，解压得到 `vault-powershell/` 文件夹。
+1. 用浏览器打开仓库 Release 页面（需登录 GitHub）：`https://github.com/ethanffu/vault-powershell/releases`（或直接访问 v0.3.0 资产页）。
+2. 下载 `vault-powershell-0.3.0.zip`，解压得到 `vault-powershell/` 文件夹。
 3. 找到你的 vault 目录，进入 `.obsidian/plugins/`（不存在则创建）。
 4. 把解压出的 `vault-powershell/` 整个文件夹复制进去。
 5. 在 Obsidian 设置 → 第三方插件中启用 **Vault PowerShell**（若提示受限模式，先关闭它）。
@@ -110,7 +113,7 @@ npm run verify  # lint + typecheck + test + build 全量验证
 
 ## 测试说明
 
-- 自动化测试覆盖：候选生成与去重、版本探测（`7`/`8`/`7\r\n`/`6`/`abc`/空串/超时/非零退出码/文件不存在）、启动参数（只启动已验证的 `pwsh.exe`、`-WorkingDirectory` 独立参数、`cwd`、无 Shell、无 `-NoProfile`/`-NonInteractive`/`-Command`、`wt.exe` ENOENT 回退直连）、完整流程（候选回退、PowerShell 6 拒绝、缓存失效重试一次、单飞锁、缓存后多窗口、非 Windows 提示、adapter 运行时检查）、文件夹右键菜单（单个文件夹恰好一个 `Open PowerShell here` 菜单项、`terminal` 图标、嵌套/根文件夹路径、文件右键与多选不显示、非 Windows 与非本地 adapter 不显示、`registerEvent` 生命周期无重复处理器、Ribbon 与菜单共享缓存与单飞、分号路径 Notice 且零进程）。
+- 自动化测试覆盖：候选生成与去重、版本探测（`7`/`8`/`7\r\n`/`6`/`abc`/空串/超时/非零退出码/文件不存在）、启动参数（只启动已验证的 `pwsh.exe`、`-WorkingDirectory` 独立参数、`cwd`、无 Shell、无 `-NoProfile`/`-NonInteractive`/`-Command`、`wt.exe` ENOENT 回退直连）、完整流程（候选回退、PowerShell 6 拒绝、缓存失效重试一次、单飞锁、缓存后多窗口、非 Windows 提示、adapter 运行时检查）、文件夹右键菜单（单个文件夹恰好一个 `Open PowerShell here` 菜单项、`terminal` 图标、嵌套/根文件夹路径、文件右键与多选不显示、非 Windows 与非本地 adapter 不显示、`registerEvent` 生命周期无重复处理器、Ribbon 元素携带稳定 CSS class（Style Settings 钩子）、Ribbon 与菜单共享缓存与单飞、分号路径 Notice 且零进程）。
 - 自动化测试通过 mock 进程调用层完成，**不会真的弹出 PowerShell 窗口**。
 - 真实 Windows 人工验收清单见 `MANUAL_TESTS.md`。自动化测试不能替代真实窗口交互验证。
 
@@ -122,6 +125,7 @@ npm run verify  # lint + typecheck + test + build 全量验证
 - 用户在真实 Obsidian 中实测（2026-08-08）：wt 宿主版的 Ribbon 入口可正常打开交互式 PowerShell 窗口，`Get-Location` 为 vault 根目录、版本 ≥ 7、关闭 Obsidian 后会话继续运行、插件重启后自动加载。
 - 用户在真实 Obsidian 中实测（2026-08-09）：文件夹右键菜单入口可正常使用——右键单个文件夹出现 `Open PowerShell here`（终端图标），点击后在该文件夹真实绝对路径打开可交互 PowerShell，`Get-Location` 正确。
 - 分号文件夹报错、vault 根文件夹右键、文件右键不显示、插件重载去重等边缘项**尚未逐一实机验证**（见 MANUAL_TESTS.md #28–#33）；剩余低优先级项（特殊字符路径实机验证、wt 缺失回退、UNC、未安装场景等）同样未逐一实机验证，其中多项已有脚本化实验/自动化测试覆盖。
+- 用户要求移除 Ribbon 入口的计划已撤销（2026-08-10）：改为适配 Style Settings 插件——保留 Ribbon 按钮，新增 `styles.css` 设置块（class-toggle `hide-vault-powershell-ribbon` → `body` 类），可隐藏左侧 Ribbon 按钮；该功能尚待真实 Obsidian 实机验证。
 
 ## License
 

@@ -52,13 +52,18 @@ export default class VaultPowerShellPlugin extends Plugin {
 
   onload(): void {
     // Entry points (exactly two, per user-approved constraint change):
-    //   1. the ribbon button -> vault root;
+    //   1. the ribbon button -> vault root (hideable via Style Settings,
+    //      never removed);
     //   2. the single-folder context-menu item -> that folder.
     // No commands, no settings, no keybindings, no batch (files-menu) entry,
     // no per-file menu entry.
-    this.addRibbonIcon(RIBBON_ICON, RIBBON_TOOLTIP, () => {
+    const ribbonEl = this.addRibbonIcon(RIBBON_ICON, RIBBON_TOOLTIP, () => {
       void this.openPowerShell(getVaultRootPath(this.app.vault));
     });
+    // Stable class for styles.css (Style Settings "Hide the ribbon button"
+    // toggle) — independent of the icon name, so the CSS survives icon
+    // changes.
+    ribbonEl.addClass('vault-powershell-ribbon');
 
     // Lifecycle is managed through `registerEvent`: Obsidian unregisters the
     // handler on disable/reload, so reloads never leave duplicate handlers.

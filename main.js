@@ -318,9 +318,10 @@ var VaultPowerShellPlugin = class extends import_obsidian2.Plugin {
     });
   }
   onload() {
-    this.addRibbonIcon(RIBBON_ICON, RIBBON_TOOLTIP, () => {
+    const ribbonEl = this.addRibbonIcon(RIBBON_ICON, RIBBON_TOOLTIP, () => {
       void this.openPowerShell(getVaultRootPath(this.app.vault));
     });
+    ribbonEl.addClass("vault-powershell-ribbon");
     this.registerEvent(this.app.workspace.on("file-menu", this.onFileMenu));
   }
   /**

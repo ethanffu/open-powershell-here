@@ -13,6 +13,7 @@ Vault PowerShell is a lightweight Obsidian desktop plugin with two entry points:
 ## Features
 
 - **Ribbon button** (Lucide `terminal` icon, tooltip: `Open PowerShell at vault root`): opens PowerShell at the current vault root.
+- **Optional Style Settings integration**: with the [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) plugin installed, go to Settings → Style Settings → Vault PowerShell and enable **Hide the ribbon button** to hide the left ribbon button (hides the button only; the feature stays; the single-folder context-menu entry is unaffected).
 - **Single-folder context menu**: right-click a **single folder** in the Obsidian file explorer and choose **`Open PowerShell here`** (Lucide `terminal` icon) to open PowerShell in that folder's real Windows absolute path. The vault root folder is supported too. The item does not appear for plain files or multi-selection.
 - Starts only the version-verified `pwsh.exe`; the real session is hosted in Windows Terminal (`wt.exe`) by default (hosting only, user-authorized). It never invokes `powershell.exe`, `cmd.exe`, `conhost.exe`, Windows `start`, WSL, Git Bash, or any other shell or terminal program, and never uses `shell: true`.
 - PowerShell lookup order:
@@ -32,6 +33,7 @@ Vault PowerShell is a lightweight Obsidian desktop plugin with two entry points:
 - **PowerShell 7 or later (`pwsh`) only**. Windows PowerShell 5.1 is not supported, and the plugin never downloads or installs PowerShell.
 - PowerShell 7+ must already be installed locally (Microsoft Store, MSI, or `dotnet tool install` — any install that leaves a findable `pwsh.exe`).
 - The vault must be on a local file system (`FileSystemAdapter`); the folder context-menu item is not shown for remote/non-local vaults.
+- Optional: hiding the ribbon button requires the third-party [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) plugin.
 
 ## Usage
 
@@ -39,6 +41,7 @@ Vault PowerShell is a lightweight Obsidian desktop plugin with two entry points:
 2. Restart Obsidian or reload the plugin.
 3. Option A: click the terminal icon in the left ribbon to open PowerShell at the vault root.
 4. Option B: right-click a **single folder** in the left file explorer (the vault root folder works too) and click **Open PowerShell here** to open PowerShell in that folder.
+5. Optional: to hide the ribbon button, install [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) and enable **Hide the ribbon button** under its Vault PowerShell section.
 
 On failure, a short, actionable English notice is shown and details go to the Obsidian developer console (`Ctrl+Shift+I`). On success, no notice is shown.
 
@@ -48,8 +51,8 @@ The private repository is not published to the Obsidian community marketplace; i
 
 **Option A: Download the zip from GitHub Releases (recommended, no CLI needed)**
 
-1. In a browser (GitHub login required), open the repository's Releases page: `https://github.com/ethanffu/vault-powershell/releases` (or go directly to the v0.2.0 assets page).
-2. Download `vault-powershell-0.2.0.zip` and unzip it — you get a `vault-powershell/` folder.
+1. In a browser (GitHub login required), open the repository's Releases page: `https://github.com/ethanffu/vault-powershell/releases` (or go directly to the v0.3.0 assets page).
+2. Download `vault-powershell-0.3.0.zip` and unzip it — you get a `vault-powershell/` folder.
 3. Open your vault folder and go to `.obsidian/plugins/` (create it if missing).
 4. Copy the whole unzipped `vault-powershell/` folder into it.
 5. In Obsidian settings → Community plugins, enable **Vault PowerShell** (turn off Restricted Mode first if prompted).
@@ -110,7 +113,7 @@ npm run verify  # lint + typecheck + test + build
 
 ## Testing
 
-- Automated tests cover: candidate generation and deduplication; version probing (`7`/`8`/`7\r\n`/`6`/`abc`/empty/timeout/non-zero exit/missing file); launch arguments (verified `pwsh.exe` only, `-WorkingDirectory` as a standalone argument, `cwd`, no shell, no `-NoProfile`/`-NonInteractive`/`-Command`, wt-missing direct fallback); end-to-end flow (candidate fallback, PowerShell 6 rejection, one-shot cache invalidation retry, single-flight lock, multiple windows after caching, non-Windows notice, adapter runtime check); and the folder context menu (exactly one `Open PowerShell here` item for a single folder, `terminal` icon, nested/root folder paths, no item for files or multi-select, hidden on non-Windows and non-local adapters, `registerEvent` lifecycle without duplicate handlers, shared cache and single-flight between ribbon and menu, semicolon-path notice with zero process creation).
+- Automated tests cover: candidate generation and deduplication; version probing (`7`/`8`/`7\r\n`/`6`/`abc`/empty/timeout/non-zero exit/missing file); launch arguments (verified `pwsh.exe` only, `-WorkingDirectory` as a standalone argument, `cwd`, no shell, no `-NoProfile`/`-NonInteractive`/`-Command`, wt-missing direct fallback); end-to-end flow (candidate fallback, PowerShell 6 rejection, one-shot cache invalidation retry, single-flight lock, multiple windows after caching, non-Windows notice, adapter runtime check); and the folder context menu (exactly one `Open PowerShell here` item for a single folder, `terminal` icon, nested/root folder paths, no item for files or multi-select, hidden on non-Windows and non-local adapters, `registerEvent` lifecycle without duplicate handlers, the ribbon element carrying a stable CSS class (Style Settings hook), shared cache and single-flight between ribbon and menu, semicolon-path notice with zero process creation).
 - Automated tests mock the process layer and **never actually pop up PowerShell windows**.
 - The real-Windows manual acceptance checklist lives in `MANUAL_TESTS.md`. Automated tests are not a substitute for real window interaction verification.
 
@@ -122,6 +125,7 @@ npm run verify  # lint + typecheck + test + build
 - Verified in real Obsidian (2026-08-08): the Windows Terminal-hosted build's ribbon entry opens a working interactive PowerShell window; `Get-Location` equals the vault root, version >= 7, the session survives closing Obsidian, and the plugin auto-loads after restart.
 - Verified in real Obsidian (2026-08-09): the folder context-menu entry works — right-clicking a single folder shows `Open PowerShell here` (terminal icon), and clicking it opens an interactive PowerShell in that folder's real absolute path (`Get-Location` correct).
 - Edge items — semicolon-folder notice, vault root folder right-click, no item for files, no duplicates after plugin reload — have **not been individually verified on the real machine yet** (see MANUAL_TESTS.md #28–#33); remaining low-priority items (special-character paths on the real machine, wt-missing fallback, UNC, missing-install scenarios) are likewise unverified individually, several already covered by scripted experiments or automated tests.
+- The plan to remove the ribbon entry was reversed (2026-08-10): the ribbon button stays, and the plugin now ships a `styles.css` Style Settings block (class-toggle `hide-vault-powershell-ribbon` → `body` class) that hides the left ribbon button. This feature has not yet been verified in a real Obsidian instance.
 
 ## License
 
