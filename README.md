@@ -62,10 +62,10 @@ The repository is not yet published to the Obsidian community marketplace; insta
 
 **Option A: Download the zip from GitHub Releases (recommended, no CLI needed)**
 
-1. In a browser (GitHub login required), open the repository's Releases page: `https://github.com/ethanffu/vault-powershell/releases` (or go directly to the v0.3.0 assets page).
-2. Download `vault-powershell-0.3.0.zip` and unzip it — you get a `vault-powershell/` folder.
+1. In a browser, open the repository's Releases page: `https://github.com/ethanffu/open-powershell-here/releases` (or go directly to the v0.3.0 assets page).
+2. Download `vault-powershell-0.3.0.zip` (legacy name) and unzip it — you get a `vault-powershell/` folder.
 3. Open your vault folder and go to `.obsidian/plugins/` (create it if missing).
-4. Copy the whole unzipped `vault-powershell/` folder into it.
+4. Copy the whole unzipped plugin folder into it.
 5. In Obsidian settings → Community plugins, enable **Open PowerShell Here** (turn off Restricted Mode first if prompted).
 
 > Downloading from the Releases page requires no GitHub login; the zip can be freely forwarded to whoever needs it (unzip and install — no GitHub account required).
@@ -73,7 +73,9 @@ The repository is not yet published to the Obsidian community marketplace; insta
 **Option B: Build from source**
 
 1. Run `npm run build` in the project root (or use the committed `main.js`).
-2. Same as Option A steps 3–5: copy `main.js`, `manifest.json` and `styles.css` (the Style Settings toggle depends on it — **do not skip it**) into `.obsidian/plugins/vault-powershell/` and enable the plugin.
+2. Same as Option A steps 3–5: copy `main.js`, `manifest.json` and `styles.css` (the Style Settings toggle depends on it — **do not skip it**) into `.obsidian/plugins/open-powershell-here/` and enable the plugin.
+
+> **Note (plugin id change):** the plugin id changed from `vault-powershell` to `open-powershell-here` on 2026-08-10 (before the rename was released). If you installed any earlier version, remove the old `.obsidian/plugins/vault-powershell/` folder after installing this one — the plugin keeps no settings, so nothing is lost.
 
 ## Building from Source
 
@@ -140,7 +142,7 @@ npm run verify  # lint + typecheck + test + build
 
 ## Contributing
 
-Issues and pull requests are welcome. Found a bug or have an idea? Open an [issue](https://github.com/ethanffu/vault-powershell/issues). Want to change the code yourself? Fork the repo and open a pull request — please run `npm run verify` before submitting.
+Issues and pull requests are welcome. Found a bug or have an idea? Open an [issue](https://github.com/ethanffu/open-powershell-here/issues). Want to change the code yourself? Fork the repo and open a pull request — please run `npm run verify` before submitting.
 
 ## License
 

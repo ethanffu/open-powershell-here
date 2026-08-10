@@ -62,10 +62,10 @@ Open PowerShell Here 是一个轻量级 Obsidian 桌面插件，提供两个入�
 
 **方式 A：从 GitHub Release 下载 zip（推荐，无需命令行）**
 
-1. 用浏览器打开仓库 Release 页面（需登录 GitHub）：`https://github.com/ethanffu/vault-powershell/releases`（或直接访问 v0.3.0 资产页）。
-2. 下载 `vault-powershell-0.3.0.zip`，解压得到 `vault-powershell/` 文件夹。
+1. 用浏览器打开仓库 Release 页面：`https://github.com/ethanffu/open-powershell-here/releases`（或直接访问 v0.3.0 资产页）。
+2. 下载 `vault-powershell-0.3.0.zip`（旧名遗留）并解压，得到 `vault-powershell/` 文件夹。
 3. 找到你的 vault 目录，进入 `.obsidian/plugins/`（不存在则创建）。
-4. 把解压出的 `vault-powershell/` 整个文件夹复制进去。
+4. 把解压出的整个插件文件夹复制进去。
 5. 在 Obsidian 设置 → 第三方插件中启用 **Open PowerShell Here**（若提示受限模式，先关闭它）。
 
 > Release 页面下载无需 GitHub 登录；zip 可自由转发给需要的人（解压即用，无需 GitHub 账号）。
@@ -73,7 +73,9 @@ Open PowerShell Here 是一个轻量级 Obsidian 桌面插件，提供两个入�
 **方式 B：从源码构建**
 
 1. 在项目根目录执行 `npm run build`（或直接使用仓库中已提交的 `main.js`）。
-2. 同方式 A 第 3–5 步，把 `main.js`、`manifest.json` 与 `styles.css`（Style Settings 开关依赖它，**必须一并复制**）放进 `.obsidian/plugins/vault-powershell/` 并启用。
+2. 同方式 A 第 3–5 步，把 `main.js`、`manifest.json` 与 `styles.css`（Style Settings 开关依赖它，**必须一并复制**）放进 `.obsidian/plugins/open-powershell-here/` 并启用。
+
+> **注意（插件 id 变更）**：插件 id 已于 2026-08-10 从 `vault-powershell` 改为 `open-powershell-here`（在改名发布之前）。若安装过旧版本，装好新版后请删除旧的 `.obsidian/plugins/vault-powershell/` 文件夹——插件不保存任何设置，无数据丢失。
 
 ## 从源码构建
 
@@ -140,7 +142,7 @@ npm run verify  # lint + typecheck + test + build 全量验证
 
 ## 参与贡献
 
-欢迎提交 Issue 和 Pull Request。遇到问题或有改进想法，欢迎开 [Issue](https://github.com/ethanffu/vault-powershell/issues)；想直接改代码，欢迎 fork 后提 PR——提交前请先运行 `npm run verify`。
+欢迎提交 Issue 和 Pull Request。遇到问题或有改进想法，欢迎开 [Issue](https://github.com/ethanffu/open-powershell-here/issues)；想直接改代码，欢迎 fork 后提 PR——提交前请先运行 `npm run verify`。
 
 ## License
 

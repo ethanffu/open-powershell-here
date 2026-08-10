@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const obsidianDir = join(root, '.test-vault', '.obsidian');
-const targetDir = join(obsidianDir, 'plugins', 'vault-powershell');
+const targetDir = join(obsidianDir, 'plugins', 'open-powershell-here');
 
 const artifacts = ['main.js', 'manifest.json', 'styles.css'];
 
@@ -29,7 +29,7 @@ for (const file of artifacts) {
   }
   mkdirSync(targetDir, { recursive: true });
   copyFileSync(src, join(targetDir, file));
-  console.log(`copied ${file} -> .test-vault/.obsidian/plugins/vault-powershell/${file}`);
+  console.log(`copied ${file} -> .test-vault/.obsidian/plugins/open-powershell-here/${file}`);
 }
 
 // Register the plugin in Obsidian's enabled-plugins list so it is loaded
@@ -46,13 +46,13 @@ if (existsSync(pluginsJson)) {
     enabled = [];
   }
 }
-if (!enabled.includes('vault-powershell')) {
-  enabled.push('vault-powershell');
+if (!enabled.includes('open-powershell-here')) {
+  enabled.push('open-powershell-here');
   mkdirSync(obsidianDir, { recursive: true });
   writeFileSync(pluginsJson, JSON.stringify(enabled, null, 2));
-  console.log('registered vault-powershell in .test-vault/.obsidian/community-plugins.json');
+  console.log('registered open-powershell-here in .test-vault/.obsidian/community-plugins.json');
 } else {
-  console.log('vault-powershell already enabled in .test-vault/.obsidian/community-plugins.json');
+  console.log('open-powershell-here already enabled in .test-vault/.obsidian/community-plugins.json');
 }
 
 console.log('\nTest vault ready: ' + join(root, '.test-vault'));
