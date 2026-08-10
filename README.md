@@ -64,20 +64,18 @@ On failure, a short, actionable English notice is shown and details go to the Ob
 
 The plugin **is published on the Obsidian community marketplace**; the recommended install is Settings → Community plugins → Browse → search **Open PowerShell Here**. Manual install options:
 
-**Option A: Download the zip from GitHub Releases (recommended, no CLI needed)**
+**Manual installation (alternative to the in-app marketplace)**
 
-1. In a browser, open the repository's Releases page: `https://github.com/ethanffu/open-powershell-here/releases`.
-2. Download the latest release zip and unzip it — you get the plugin folder (the v0.3.0 zip is still named `vault-powershell-0.3.0.zip`).
-3. Open your vault folder and go to `.obsidian/plugins/` (create it if missing).
-4. Copy the whole unzipped plugin folder into it.
+1. Open the latest release: `https://github.com/ethanffu/open-powershell-here/releases`.
+2. Download `main.js`, `manifest.json` and `styles.css` (styles.css is required for the Style Settings hide toggle — **do not skip it**).
+3. Open your vault folder and go to `.obsidian/plugins/` (create it if missing), then create the folder `open-powershell-here/` inside it.
+4. Copy the three files into `open-powershell-here/`.
 5. In Obsidian settings → Community plugins, enable **Open PowerShell Here** (turn off Restricted Mode first if prompted).
 
-> Downloading from the Releases page requires no GitHub login; the zip can be freely forwarded to whoever needs it (unzip and install — no GitHub account required).
-
-**Option B: Build from source**
+**Build from source**
 
 1. Run `npm run build` in the project root (or use the committed `main.js`).
-2. Same as Option A steps 3–5: copy `main.js`, `manifest.json` and `styles.css` (the Style Settings toggle depends on it — **do not skip it**) into `.obsidian/plugins/open-powershell-here/` and enable the plugin.
+2. Copy `main.js`, `manifest.json` and `styles.css` into `.obsidian/plugins/open-powershell-here/` and enable the plugin.
 
 > **Note (plugin id change):** the plugin id changed from `vault-powershell` to `open-powershell-here` on 2026-08-10. If you installed any earlier version, remove the old `.obsidian/plugins/vault-powershell/` folder after installing this one — the plugin keeps no settings, so nothing is lost.
 
