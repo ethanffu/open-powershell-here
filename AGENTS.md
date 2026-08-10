@@ -12,7 +12,7 @@
   - **双重保障**：CSS 双选择器（`.vault-powershell-ribbon` + `.clickable-icon[aria-label="Open PowerShell at vault root"]`，`display: none !important`）；同时 `main.ts` 用 `MutationObserver` 监听 body class 变化，以内联样式强制隐藏/恢复按钮（不依赖任何 CSS/DOM 假设，Obsidian 1.13.6 实测环境同样适用）。
   - 安装文档必须要求复制 `styles.css`。不得删除 Ribbon 入口，不得把隐藏做成硬编码（必须可切换）。
 - 仍禁止：命令面板命令、快捷键、设置页、批量（多选）右键菜单（`files-menu`）、普通文件右键菜单、内嵌终端、自动执行脚本。
-- 插件 ID：`vault-powershell`；主类：`VaultPowerShellPlugin`；当前版本 `0.3.0`；仓库 Private，默认分支 `main`。
+- 插件 ID：`vault-powershell`；主类：`VaultPowerShellPlugin`；当前版本 `0.3.0`；仓库 **Public**（2026-08-10 用户决定公开）；默认分支 `main`。
 
 ## 硬性约束（不可违反）
 
@@ -44,7 +44,7 @@
 - 每次改动后、回复用户前必须依次完成：
   1. `npm run verify`（lint → typecheck → test → build）通过；
   2. 确认 `main.js` 已重新构建且与源码一致（CI 同样检查 `git diff --exit-code -- main.js`）；
-  3. 检查并同步中英文 README（`README.md` 简体中文、`README.en.md` 英文）、`MANUAL_TESTS.md`、manifest 与 GitHub About/Topics（事实变化才改，不制造无意义差异）；
+  3. 检查并同步中英文 README（`README.md` 英文为默认、`README.zh.md` 简体中文）、`MANUAL_TESTS.md`、manifest 与 GitHub About/Topics（事实变化才改，不制造无意义差异）；
   4. 检查暂存区无敏感文件（`.env`、token、凭据、`.test-vault`、node_modules、日志）；
   5. `git add -A`；有变化才提交（Conventional Commits，如 `feat:`/`fix:`/`test:`/`docs:`/`chore:`）；无变化不得空提交；
   6. 推送 `origin/main`；确认远端 HEAD 与本地一致；`git status` 干净后才回复。
@@ -61,7 +61,7 @@
 ## 参考文件
 
 - `MANUAL_TESTS.md`：真实 Windows 人工验收清单与平台行为发现。
-- `README.md` / `README.en.md`：中英文用户文档（必须同步）。
+- `README.md`（英文，默认）/ `README.zh.md`（简体中文）：用户文档（必须同步，两文件仅在语言与互链上不同）。
 - `.github/workflows/ci.yml`：Windows CI（lint/typecheck/test/build/`main.js` 同步检查）。
 - `src/`：`main.ts`（生命周期、Ribbon 与单文件夹右键菜单、共享启动流程）、`vault-path.ts`（vault 根路径与文件夹路径解析）、`powershell/{candidates,version-probe,launcher,finder,types}.ts`。`styles.css`：Style Settings `@settings` 块（隐藏 Ribbon 开关）与对应 CSS 规则。
 - `tests/`：Vitest 测试；`tests/mocks/obsidian.ts` 是 `obsidian` 包（仅类型）的测试替身（见 `vitest.config.ts` 别名），含 Workspace/`file-menu` 事件、Menu/MenuItem、TFolder/TFile、`FileSystemAdapter.getFullPath()` 与 `registerEvent` 生命周期的模拟。

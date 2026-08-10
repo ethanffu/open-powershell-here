@@ -1,132 +1,132 @@
 # Vault PowerShell
 
-[English](README.en.md)
+[简体中文](README.zh.md)
 
-在 Obsidian 中打开本机 **PowerShell 7 或更高版本**：点击左侧 Ribbon 按钮在 vault 根目录打开，或在文件资源管理器中右键单个文件夹，从菜单选择 **Open PowerShell here** 在该文件夹打开。
+Open your local **PowerShell 7 or later** from Obsidian: click the left ribbon button to open it at the vault root, or right-click a single folder in the file explorer and choose **Open PowerShell here** to open it in that folder.
 
-> ⚠️ **仓库可见性：Private**。当前 GitHub 仓库为私有仓库，主要通过手动复制构建产物（`main.js` + `manifest.json`）安装，详见下文。
+> Install from the latest GitHub Release (see below) or build from source. The plugin is not yet published to the Obsidian community marketplace.
 
-## 项目简介
+## Introduction
 
-Vault PowerShell 是一个轻量级 Obsidian 桌面插件，提供两个入口：Ribbon 按钮（在 vault 根目录打开）与单文件夹右键菜单项（在被右键文件夹打开）。它不做任何终端内嵌、命令面板命令、快捷键、设置页、批量右键菜单或自动脚本执行；它只做一件事：找到本机已安装的 `pwsh.exe`（PowerShell 7+），验证版本，然后直接启动它并把目标目录（vault 根目录或右键文件夹）设为初始工作目录。
+Vault PowerShell is a lightweight Obsidian desktop plugin with two entry points: a ribbon button (opens at the vault root) and a single-folder context-menu item (opens in the right-clicked folder). No embedded terminal, no command palette commands, no hotkeys, no settings page, no batch context menu, no automatic script execution. It finds the locally installed `pwsh.exe` (PowerShell 7+), verifies its version, launches it directly, and sets the target directory (vault root or right-clicked folder) as the working directory.
 
-## 功能
+## Features
 
-- **Ribbon 按钮**（Lucide `terminal` 图标，tooltip：`Open PowerShell at vault root`）：在当前 vault 根目录打开 PowerShell。
-- **Style Settings 可选集成**：安装 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) 插件后，可在 设置 → Style Settings → Vault PowerShell 中打开 **Hide the ribbon button** 隐藏左侧 Ribbon 按钮（仅隐藏按钮，功能保留；单文件夹右键菜单入口不受影响）。
-- **单文件夹右键菜单**：在 Obsidian 文件资源管理器中右键**单个文件夹**，菜单显示 **`Open PowerShell here`**（Lucide `terminal` 图标），点击后在该文件夹的真实 Windows 绝对路径中打开 PowerShell。vault 根文件夹同样支持。右键普通文件、多选时不显示该菜单项。
-- 只启动经过版本验证的 `pwsh.exe`；正式会话默认以 Windows Terminal（`wt.exe`）作为控制台窗口宿主（仅宿主用途，用户已授权）。不调用 `powershell.exe`、`cmd.exe`、`conhost.exe`、`start`、WSL、Git Bash 或其他 Shell/终端程序，不使用 `shell: true`。
-- PowerShell 查找顺序：
-  1. `pwsh.exe`（由 Windows 使用 Obsidian 进程继承的 `PATH` 解析）
+- **Ribbon button** (Lucide `terminal` icon, tooltip: `Open PowerShell at vault root`): opens PowerShell at the current vault root.
+- **Optional Style Settings integration**: with the [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) plugin installed, go to Settings → Style Settings → Vault PowerShell and enable **Hide the ribbon button** to hide the left ribbon button (hides the button only; the feature stays; the single-folder context-menu entry is unaffected).
+- **Single-folder context menu**: right-click a **single folder** in the Obsidian file explorer and choose **`Open PowerShell here`** (Lucide `terminal` icon) to open PowerShell in that folder's real Windows absolute path. The vault root folder is supported too. The item does not appear for plain files or multi-selection.
+- Starts only the version-verified `pwsh.exe`; the real session is hosted in Windows Terminal (`wt.exe`) by default (hosting only, user-authorized). It never invokes `powershell.exe`, `cmd.exe`, `conhost.exe`, Windows `start`, WSL, Git Bash, or any other shell or terminal program, and never uses `shell: true`.
+- PowerShell lookup order:
+  1. `pwsh.exe` (resolved by Windows against the PATH inherited by the Obsidian process)
   2. `%ProgramFiles%\PowerShell\7\pwsh.exe`
   3. `%USERPROFILE%\.dotnet\tools\pwsh.exe`
-- 对每个候选执行隐藏的版本探测（`-NoLogo -NoProfile -NonInteractive -Command $PSVersionTable.PSVersion.Major`，无窗口、5 秒超时、只接受退出码 0、输出必须是可解析且 ≥ 7 的整数）。PowerShell 6 会被拒绝。
-- 版本验证通过后，通过 Windows Terminal（`wt.exe`，仅作为控制台窗口宿主）启动同一个 `pwsh.exe` 正式会话：不附加 `-NoProfile`/`-NonInteractive`/`-Command`，用户 Profile 正常加载，不自动执行任何命令。`wt.exe` 缺失时自动回退直接启动 `pwsh.exe`。
-  > 背景：从资源管理器启动的 Obsidian（无控制台的 GUI 进程）直接 `spawn` 时，pwsh 无法获得可交互控制台句柄会立即退出（v0.1 实测闪退）；以 Windows Terminal 作为窗口宿主后 pwsh 获得真实控制台句柄，完全可交互（已实测，详见 MANUAL_TESTS.md）。本变更经用户明确授权，且仅限宿主用途：插件不代理、不监听、不记录任何输入输出。
-- 目标路径通过 `-WorkingDirectory` 独立参数传递，同时把子进程 `cwd` 设为该目录；路径不会被拼进任何命令字符串，兼容空格、中文、`&`、括号、单引号等特殊字符。
-- 内存缓存已验证的 `pwsh.exe` 路径与主版本号（仅存在于内存，重启 Obsidian 后重新验证；Ribbon 与右键菜单共用同一缓存）；正式启动发生 `ENOENT` 时清除缓存并重试一次。
-- 查找期间有“解析中”单飞锁，快速双击（或两个入口同时触发）不会产生多个并行探测；缓存就绪后每次点击任一入口都打开一个新会话，无冷却时间。
+- Each candidate is probed with a hidden version check (`-NoLogo -NoProfile -NonInteractive -Command $PSVersionTable.PSVersion.Major`, windowless, 5 s timeout, exit code 0 only, output must parse to an integer >= 7). PowerShell 6 is rejected.
+- After verification, the same `pwsh.exe` is started for the real session via Windows Terminal (`wt.exe`, used only as the console window host) without `-NoProfile` / `-NonInteractive` / `-Command`; the user profile loads normally and nothing is auto-executed. If `wt.exe` is missing, the plugin falls back to a direct `pwsh.exe` spawn.
+  > Background: when Obsidian is launched from Explorer (a GUI process without a console), a direct spawn cannot give pwsh interactive console handles and pwsh exits immediately (confirmed in real use on v0.1). Hosting the session in Windows Terminal gives pwsh real console handles and full interactivity (verified experimentally; see MANUAL_TESTS.md). This change was explicitly authorized by the user and is limited to hosting: the plugin does not proxy, listen to or record any input/output.
+- The target directory is passed as its own `-WorkingDirectory` argument, and the child `cwd` is set to that directory as a second guarantee; the path is never embedded in a command string. Spaces, Chinese characters, `&`, parentheses, single quotes and other special characters are safe.
+- The verified `pwsh.exe` path and major version are cached in memory only (re-verified after restarting Obsidian; the ribbon and the context menu share the same cache); a launch-time `ENOENT` clears the cache and retries once.
+- A single-flight "resolving" lock prevents parallel probe chains on double clicks or simultaneous triggers from both entries; once cached, every click on either entry opens a new session with no cooldown.
 
-## 系统要求
+## System Requirements
 
-- **仅支持 Windows 桌面端 Obsidian**（`isDesktopOnly: true`）。非 Windows 平台仍显示 Ribbon 按钮，点击时提示 `Vault PowerShell only supports Obsidian Desktop on Windows.`；文件夹右键菜单项在非 Windows 平台不显示。
-- **仅支持 PowerShell 7 或更高版本（pwsh）**。不支持 Windows PowerShell 5.1（`powershell.exe`），插件也不会自动下载或安装 PowerShell。
-- 需要本机已安装 PowerShell 7+（Microsoft Store 版、MSI 安装或 `dotnet tool install` 均可，只要 `pwsh.exe` 可被找到）。
-- vault 必须是本地文件系统 vault（`FileSystemAdapter`）；远程/非本地 vault 不显示文件夹右键菜单项。
-- （可选）隐藏 Ribbon 按钮需要第三方插件 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings)。
+- **Windows desktop Obsidian only** (`isDesktopOnly: true`). On other platforms the ribbon button still shows; clicking it shows `Vault PowerShell only supports Obsidian Desktop on Windows.` The folder context-menu item is not shown on non-Windows platforms.
+- **PowerShell 7 or later (`pwsh`) only**. Windows PowerShell 5.1 is not supported, and the plugin never downloads or installs PowerShell.
+- PowerShell 7+ must already be installed locally (Microsoft Store, MSI, or `dotnet tool install` — any install that leaves a findable `pwsh.exe`).
+- The vault must be on a local file system (`FileSystemAdapter`); the folder context-menu item is not shown for remote/non-local vaults.
+- Optional: hiding the ribbon button requires the third-party [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) plugin.
 
-## 使用方式
+## Usage
 
-1. 安装插件（见下方安装方式）。
-2. 重启 Obsidian 或重新加载插件。
-3. 方式一：点击左侧 Ribbon 中的终端图标，在 vault 根目录打开 PowerShell。
-4. 方式二：在左侧文件资源管理器中右键**单个文件夹**（包括 vault 根文件夹），点击 **Open PowerShell here**，在该文件夹打开 PowerShell。
-5. （可选）不想看到 Ribbon 按钮时：安装 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) 插件，在其设置 → Vault PowerShell 中打开 **Hide the ribbon button**。
+1. Install the plugin (see below).
+2. Restart Obsidian or reload the plugin.
+3. Option A: click the terminal icon in the left ribbon to open PowerShell at the vault root.
+4. Option B: right-click a **single folder** in the left file explorer (the vault root folder works too) and click **Open PowerShell here** to open PowerShell in that folder.
+5. Optional: to hide the ribbon button, install [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) and enable **Hide the ribbon button** under its Vault PowerShell section.
 
-失败时显示简短、可操作的英文 Notice，详细错误写入 Obsidian 开发者控制台（`Ctrl+Shift+I`）。成功时不显示 Notice。
+On failure, a short, actionable English notice is shown and details go to the Obsidian developer console (`Ctrl+Shift+I`). On success, no notice is shown.
 
-## 手动安装方式
+## Manual Installation
 
-私有仓库不发布到 Obsidian 社区市场，可通过以下任一方式安装：
+The repository is not yet published to the Obsidian community marketplace; install via either option:
 
-**方式 A：从 GitHub Release 下载 zip（推荐，无需命令行）**
+**Option A: Download the zip from GitHub Releases (recommended, no CLI needed)**
 
-1. 用浏览器打开仓库 Release 页面（需登录 GitHub）：`https://github.com/ethanffu/vault-powershell/releases`（或直接访问 v0.3.0 资产页）。
-2. 下载 `vault-powershell-0.3.0.zip`，解压得到 `vault-powershell/` 文件夹。
-3. 找到你的 vault 目录，进入 `.obsidian/plugins/`（不存在则创建）。
-4. 把解压出的 `vault-powershell/` 整个文件夹复制进去。
-5. 在 Obsidian 设置 → 第三方插件中启用 **Vault PowerShell**（若提示受限模式，先关闭它）。
+1. In a browser (GitHub login required), open the repository's Releases page: `https://github.com/ethanffu/vault-powershell/releases` (or go directly to the v0.3.0 assets page).
+2. Download `vault-powershell-0.3.0.zip` and unzip it — you get a `vault-powershell/` folder.
+3. Open your vault folder and go to `.obsidian/plugins/` (create it if missing).
+4. Copy the whole unzipped `vault-powershell/` folder into it.
+5. In Obsidian settings → Community plugins, enable **Vault PowerShell** (turn off Restricted Mode first if prompted).
 
-> 因仓库为 Private，下载需要 GitHub 账号登录；zip 可自由转发给需要的人（解压即用，无需 GitHub 账号）。
+> Downloading from the Releases page requires no GitHub login; the zip can be freely forwarded to whoever needs it (unzip and install — no GitHub account required).
 
-**方式 B：从源码构建**
+**Option B: Build from source**
 
-1. 在项目根目录执行 `npm run build`（或直接使用仓库中已提交的 `main.js`）。
-2. 同方式 A 第 3–5 步，把 `main.js`、`manifest.json` 与 `styles.css`（Style Settings 开关依赖它，**必须一并复制**）放进 `.obsidian/plugins/vault-powershell/` 并启用。
+1. Run `npm run build` in the project root (or use the committed `main.js`).
+2. Same as Option A steps 3–5: copy `main.js`, `manifest.json` and `styles.css` (the Style Settings toggle depends on it — **do not skip it**) into `.obsidian/plugins/vault-powershell/` and enable the plugin.
 
-## 从源码构建
+## Building from Source
 
 ```bash
-npm ci          # 可重复安装（使用 lockfile）
-npm run dev     # 监听并重新构建
-npm run build   # 生成生产版 main.js
-npm run verify  # lint + typecheck + test + build 全量验证
+npm ci          # reproducible install (lockfile)
+npm run dev     # watch and rebuild
+npm run build   # production main.js
+npm run verify  # lint + typecheck + test + build
 ```
 
-## PowerShell 查找和版本验证逻辑
+## PowerShell Lookup and Version Verification
 
-1. 生成候选列表：`pwsh.exe`（PATH 优先）→ `%ProgramFiles%\PowerShell\7\pwsh.exe` → `%USERPROFILE%\.dotnet\tools\pwsh.exe`；去除重复（不区分大小写）；缺少环境变量时跳过对应候选。
-2. 逐个候选执行隐藏版本探测（参数数组、`shell: false`、`windowsHide: true`、5 秒超时、只接受退出码 0）。
-3. 输出必须 trim 后是纯整数且主版本 ≥ 7；PowerShell 6 及以下被拒绝；当前候选失败继续验证下一个。
-4. 全部失败时提示安装 PowerShell。
-5. 验证通过后缓存路径与主版本号（Ribbon 与右键菜单共用）；正式会话直接用该 `pwsh.exe` 启动。
+1. Build the candidate list: `pwsh.exe` (PATH first) → `%ProgramFiles%\PowerShell\7\pwsh.exe` → `%USERPROFILE%\.dotnet\tools\pwsh.exe`; deduplicate case-insensitively; skip candidates whose environment variables are missing.
+2. Probe candidates one by one with a hidden check (argument array, `shell: false`, `windowsHide: true`, 5 s timeout, exit code 0 only).
+3. Output must trim to a plain integer with major version >= 7; PowerShell 6 and below are rejected; on failure the next candidate is tried.
+4. If all candidates fail, a notice suggests installing PowerShell.
+5. The verified path and major version are cached (shared by the ribbon and the context menu); the real session uses that exact `pwsh.exe`.
 
-## 隐私与安全
+## Privacy & Security
 
-- 插件**不联网**、**不收集遥测**、**不上传任何数据**。
-- 插件**不读取笔记内容**、**不修改 vault 中的任何文件**、不创建日志文件。
-- vault 路径与文件夹路径只作为独立进程参数（`-WorkingDirectory`）和子进程 `cwd` 使用，不写入任何文件。
-- 插件**不监听、不代理、不记录** PowerShell 会话的输入输出。
-- 插件**不自动执行任何 PowerShell 命令或脚本**（正式会话不含 `-Command`）。
-- 插件**不下载、不安装、不更新** PowerShell。
-- 不执行来自 vault 文件名或路径的代码。
+- The plugin **never goes online**, **collects no telemetry**, and **uploads no data**.
+- The plugin **does not read note content**, **does not modify vault files**, and creates **no log files**.
+- Vault and folder paths are used only as standalone process arguments (`-WorkingDirectory`) and as the child `cwd`; they are never written anywhere.
+- The plugin **does not listen to, proxy, or record** the PowerShell session's input or output.
+- The plugin **never auto-executes PowerShell commands or scripts** (no `-Command` in the real session).
+- The plugin **never downloads, installs, or updates** PowerShell.
+- It never executes code derived from vault file names or paths.
 
-## 已知限制
+## Known Limitations
 
-- 入口仅限 Ribbon 与单文件夹右键菜单：没有命令面板命令、快捷键、设置页、批量（多选）右键菜单、文件右键菜单或内嵌终端。
-- 仅支持 Windows；仅支持 PowerShell 7+；不支持 5.1；仅支持本地文件系统 vault。
-- 正式会话默认以 Windows Terminal（`wt.exe`）作为控制台窗口宿主（用户授权的约束变更，v0.1 直连方案实测会闪退）；`wt.exe` 缺失时回退为直接启动 `pwsh.exe`（从终端启动 Obsidian 时可用）。插件始终不调用 `cmd.exe`、`powershell.exe`、`conhost.exe`、`start` 或 `shell: true`。
-- **含 `;` 的目标路径**（vault 根目录或右键文件夹）不受支持（Windows Terminal 会把分号当作命令分隔符，实测确认）；此类路径**不会启动任何进程**，而是显示 Notice：`PowerShell cannot be opened for paths containing a semicolon (;).`。其他特殊字符（空格、`&`、括号、单引号、中文）均已实测安全。
-- 仓库当前为 **Private**，没有发布到 Obsidian 社区市场；私有仓库版本主要通过手动复制构建产物安装。
+- Entry points are limited to the ribbon and the single-folder context menu: no palette commands, hotkeys, settings page, batch (multi-select) context menu, file context menu, or embedded terminal.
+- Windows only; PowerShell 7+ only; 5.1 is not supported; local file system vaults only.
+- The real session is hosted in Windows Terminal (`wt.exe`) by default (user-authorized constraint change; the v0.1 direct-spawn build was verified to flash-close in real use). If `wt.exe` is missing, the plugin falls back to a direct `pwsh.exe` spawn (usable when Obsidian was started from a terminal). The plugin never invokes `cmd.exe`, `powershell.exe`, `conhost.exe`, Windows `start`, or `shell: true`.
+- **Target paths containing `;` are not supported** (Windows Terminal treats `;` as a command separator — verified). For such paths (vault root or right-clicked folder) **no process is started at all**; the plugin shows the notice `PowerShell cannot be opened for paths containing a semicolon (;).` All other special characters (spaces, `&`, parentheses, single quotes, CJK) are verified safe.
+- The repository is **Public** (since 2026-08-10) but not yet published to the Obsidian community marketplace; install by copying the build artifacts.
 
-## 开发命令
+## Development Commands
 
-| 命令 | 说明 |
+| Command | Description |
 | --- | --- |
-| `npm run dev` | 监听并重新构建 |
-| `npm run build` | 生成生产版 `main.js` |
-| `npm run lint` | ESLint 检查（src 与 tests） |
-| `npm run typecheck` | TypeScript 类型检查 |
-| `npm test` | 运行自动化测试（Vitest） |
-| `npm run verify` | 依次执行 lint、typecheck、test、build |
-| `npm run install:test` | 把构建产物复制到项目内 `.test-vault`（临时测试 vault，已 gitignore），并自动把插件写入启用列表（`community-plugins.json`），打开测试 vault 即自动加载 |
+| `npm run dev` | Watch and rebuild |
+| `npm run build` | Production `main.js` |
+| `npm run lint` | ESLint over `src` and `tests` |
+| `npm run typecheck` | TypeScript type checking |
+| `npm test` | Automated tests (Vitest) |
+| `npm run verify` | lint + typecheck + test + build |
+| `npm run install:test` | Copy artifacts into the project-local `.test-vault` (gitignored) and register the plugin in the enabled-plugins list (`community-plugins.json`) so it loads automatically when the test vault is opened |
 
-## 测试说明
+## Testing
 
-- 自动化测试覆盖：候选生成与去重、版本探测（`7`/`8`/`7\r\n`/`6`/`abc`/空串/超时/非零退出码/文件不存在）、启动参数（只启动已验证的 `pwsh.exe`、`-WorkingDirectory` 独立参数、`cwd`、无 Shell、无 `-NoProfile`/`-NonInteractive`/`-Command`、`wt.exe` ENOENT 回退直连）、完整流程（候选回退、PowerShell 6 拒绝、缓存失效重试一次、单飞锁、缓存后多窗口、非 Windows 提示、adapter 运行时检查）、文件夹右键菜单（单个文件夹恰好一个 `Open PowerShell here` 菜单项、`terminal` 图标、嵌套/根文件夹路径、文件右键与多选不显示、非 Windows 与非本地 adapter 不显示、`registerEvent` 生命周期无重复处理器、Ribbon 元素携带稳定 CSS class（Style Settings 钩子）、Ribbon 与菜单共享缓存与单飞、分号路径 Notice 且零进程）。
-- 自动化测试通过 mock 进程调用层完成，**不会真的弹出 PowerShell 窗口**。
-- 真实 Windows 人工验收清单见 `MANUAL_TESTS.md`。自动化测试不能替代真实窗口交互验证。
+- Automated tests cover: candidate generation and deduplication; version probing (`7`/`8`/`7\r\n`/`6`/`abc`/empty/timeout/non-zero exit/missing file); launch arguments (verified `pwsh.exe` only, `-WorkingDirectory` as a standalone argument, `cwd`, no shell, no `-NoProfile`/`-NonInteractive`/`-Command`, wt-missing direct fallback); end-to-end flow (candidate fallback, PowerShell 6 rejection, one-shot cache invalidation retry, single-flight lock, multiple windows after caching, non-Windows notice, adapter runtime check); and the folder context menu (exactly one `Open PowerShell here` item for a single folder, `terminal` icon, nested/root folder paths, no item for files or multi-select, hidden on non-Windows and non-local adapters, `registerEvent` lifecycle without duplicate handlers, the ribbon element carrying a stable CSS class (Style Settings hook), shared cache and single-flight between ribbon and menu, semicolon-path notice with zero process creation).
+- Automated tests mock the process layer and **never actually pop up PowerShell windows**.
+- The real-Windows manual acceptance checklist lives in `MANUAL_TESTS.md`. Automated tests are not a substitute for real window interaction verification.
 
-## 当前项目状态
+## Current Project Status
 
 `context-menu entry manually verified (core items); edge items pending`
 
-- 代码、构建与自动化测试已完成；Windows 进程创建行为已通过脚本化实验验证（MANUAL_TESTS.md“平台行为发现”）。
-- 用户在真实 Obsidian 中实测（2026-08-08）：wt 宿主版的 Ribbon 入口可正常打开交互式 PowerShell 窗口，`Get-Location` 为 vault 根目录、版本 ≥ 7、关闭 Obsidian 后会话继续运行、插件重启后自动加载。
-- 用户在真实 Obsidian 中实测（2026-08-09）：文件夹右键菜单入口可正常使用——右键单个文件夹出现 `Open PowerShell here`（终端图标），点击后在该文件夹真实绝对路径打开可交互 PowerShell，`Get-Location` 正确。
-- 分号文件夹报错、vault 根文件夹右键、文件右键不显示、插件重载去重等边缘项**尚未逐一实机验证**（见 MANUAL_TESTS.md #28–#33）；剩余低优先级项（特殊字符路径实机验证、wt 缺失回退、UNC、未安装场景等）同样未逐一实机验证，其中多项已有脚本化实验/自动化测试覆盖。
-- 用户要求移除 Ribbon 入口的计划已撤销（2026-08-10）：保留 Ribbon 按钮，改为 Style Settings 集成（`styles.css` 提供 **Hide the ribbon button** 开关）。首次实现（曾以 v0.3.0/v0.3.1 名义发布后均撤销）在用户环境中不生效，**真实根因**：Style Settings 的 `class-toggle` 把**设置项 `id`**（而非 `addClass`，该属性被忽略）加到 `<body>`，此前 CSS 选择器与 body 类名不匹配。修复：设置项 `id` 即类名；CSS 双选择器（自定义 class + tooltip `aria-label`）+ `!important`；并在 `main.ts` 中用 MutationObserver 监听 body 类、以内联样式强制隐藏按钮（不依赖任何 CSS/DOM 假设）。**Release 待用户实机确认后另行发布（用户指示：经同意才 release，版本号 0.3.0）。**
+- Code, build and automated tests are complete; Windows process-creation behavior was verified with scripted experiments (MANUAL_TESTS.md "Platform behavior findings").
+- Verified in real Obsidian (2026-08-08): the Windows Terminal-hosted build's ribbon entry opens a working interactive PowerShell window; `Get-Location` equals the vault root, version >= 7, the session survives closing Obsidian, and the plugin auto-loads after restart.
+- Verified in real Obsidian (2026-08-09): the folder context-menu entry works — right-clicking a single folder shows `Open PowerShell here` (terminal icon), and clicking it opens an interactive PowerShell in that folder's real absolute path (`Get-Location` correct).
+- Edge items — semicolon-folder notice, vault root folder right-click, no item for files, no duplicates after plugin reload — have **not been individually verified on the real machine yet** (see MANUAL_TESTS.md #28–#33); remaining low-priority items (special-character paths on the real machine, wt-missing fallback, UNC, missing-install scenarios) are likewise unverified individually, several already covered by scripted experiments or automated tests.
+- The plan to remove the ribbon entry was reversed (2026-08-10): the ribbon button stays, and the plugin ships a `styles.css` Style Settings block with a single **Hide the ribbon button** toggle. The first attempts (published as v0.3.0/v0.3.1 and both revoked) did not hide the button in the user's environment. **Actual root cause:** for `class-toggle`, Style Settings applies the **setting `id`** (not `addClass`, which is ignored) to `<body>`; the previous CSS selector never matched the body class. Fix: the setting id IS the class name; the CSS uses two selectors (custom class + tooltip `aria-label`) with `!important`; and `main.ts` additionally enforces the hide via inline style through a MutationObserver on the body class, so hiding does not depend on any CSS/DOM assumption. **Release is pending the user's real-machine confirmation (per user instruction: release only after approval; version 0.3.0).**
 
 ## License
 
-MIT License，见 [LICENSE](LICENSE)。
+MIT License, see [LICENSE](LICENSE).
