@@ -29,6 +29,8 @@ Open PowerShell here 是一个轻量级 Obsidian 桌面插件，提供两个入�
 
 ## 适合人群
 
+> **特别适合**：在 vault 根目录下按主题/项目拆分了多个知识库（子库），并习惯用 Agent CLI（如 Claude Code、Codex CLI、Gemini CLI 等）在终端里干活的人——右键对应的子库文件夹 → **Open PowerShell here**，Agent 直接在你想要的目录就位，全程不用手动 `cd`。
+
 - **Windows 桌面端 Obsidian 用户**，且已安装 PowerShell 7+（`pwsh`）——开发者、运维、脚本爱好者。
 - 经常需要在 **vault 根目录或某个文件夹里**打开 PowerShell 的人：运行 vault 内的脚本、`git` 操作、批量重命名/处理文件、在 vault 真实路径下测试命令。
 - 不想每次都手动打开终端再 `cd` 到 vault 路径的人。

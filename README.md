@@ -29,6 +29,8 @@ Open PowerShell here is a lightweight Obsidian desktop plugin with two entry poi
 
 ## Who is this for?
 
+> **Especially for:** users who keep multiple knowledge bases (sub-vaults) under one vault root and work with Agent CLIs — e.g. Claude Code, Codex CLI, Gemini CLI — right-click the sub-vault folder → **Open PowerShell here**, and the agent starts in the right working directory without a single manual `cd`.
+
 - **Windows desktop Obsidian users** who already have PowerShell 7+ (`pwsh`) installed — developers, IT/ops, scripters.
 - Anyone who often needs a PowerShell prompt **at the vault root or inside a specific folder**: run vault-local scripts, `git` operations, batch-rename or process files, or test commands against the vault's real path.
 - Anyone tired of opening a terminal and typing `cd <vault>` every time.
