@@ -146,7 +146,7 @@ npm run verify  # lint + typecheck + test + build 全量验证
 - 用户在真实 Obsidian 中实测（2026-08-08）：wt 宿主版的 Ribbon 入口可正常打开交互式 PowerShell 窗口，`Get-Location` 为 vault 根目录、版本 ≥ 7、关闭 Obsidian 后会话继续运行、插件重启后自动加载。
 - 用户在真实 Obsidian 中实测（2026-08-09）：文件夹右键菜单入口可正常使用——右键单个文件夹出现 `Open PowerShell here`（终端图标），点击后在该文件夹真实绝对路径打开可交互 PowerShell，`Get-Location` 正确。
 - 分号文件夹报错、vault 根文件夹右键、文件右键不显示、插件重载去重等边缘项**尚未逐一实机验证**（见 MANUAL_TESTS.md #28–#33）；剩余低优先级项（特殊字符路径实机验证、wt 缺失回退、UNC、未安装场景等）同样未逐一实机验证，其中多项已有脚本化实验/自动化测试覆盖。
-- 用户要求移除 Ribbon 入口的计划已撤销（2026-08-10）：保留 Ribbon 按钮，改为 Style Settings 集成（`styles.css` 提供 **Hide the ribbon button** 开关）。首次实现（曾以 v0.3.0/v0.3.1 名义发布后均撤销）在用户环境中不生效，**真实根因**：Style Settings 的 `class-toggle` 把**设置项 `id`**（而非 `addClass`，该属性被忽略）加到 `<body>`，此前 CSS 选择器与 body 类名不匹配。修复：设置项 `id` 即类名；CSS 双选择器（自定义 class + tooltip `aria-label`）+ `!important`；并在 `main.ts` 中用 MutationObserver 监听 body 类、以内联样式强制隐藏按钮（不依赖任何 CSS/DOM 假设）。**Release 待用户实机确认后另行发布（用户指示：经同意才 release，版本号 0.3.0）。**
+- 用户要求移除 Ribbon 入口的计划已撤销（2026-08-10）：保留 Ribbon 按钮，改为 Style Settings 集成（`styles.css` 提供 **Hide the ribbon button** 开关）。首次实现（曾以 v0.3.0/v0.3.1 名义发布后均撤销）在用户环境中不生效，**真实根因**：Style Settings 的 `class-toggle` 把**设置项 `id`**（而非 `addClass`，该属性被忽略）加到 `<body>`，此前 CSS 选择器与 body 类名不匹配。修复：设置项 `id` 即类名；CSS 双选择器（自定义 class + tooltip `aria-label`）+ `!important`；并在 `main.ts` 中用 MutationObserver 监听 body 类、以内联样式强制隐藏按钮（不依赖任何 CSS/DOM 假设）。2026-08-10 用户实机复验通过，随 **v0.4.0**（新插件身份：`open-powershell-here` / Open PowerShell Here / 作者 ethanffu）发布。
 
 ## 参与贡献
 

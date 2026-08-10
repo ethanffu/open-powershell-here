@@ -12,7 +12,7 @@
   - **双重保障**：CSS 双选择器（`.vault-powershell-ribbon` + `.clickable-icon[aria-label="Open PowerShell at vault root"]`，`display: none !important`）；同时 `main.ts` 用 `MutationObserver` 监听 body class 变化，以内联样式强制隐藏/恢复按钮（不依赖任何 CSS/DOM 假设，Obsidian 1.13.6 实测环境同样适用）。
   - 安装文档必须要求复制 `styles.css`。不得删除 Ribbon 入口，不得把隐藏做成硬编码（必须可切换）。
 - 仍禁止：命令面板命令、快捷键、设置页、批量（多选）右键菜单（`files-menu`）、普通文件右键菜单、内嵌终端、自动执行脚本。
-- 插件 ID：`open-powershell-here`（**安装/更新键，永不更改**；2026-08-10 与显示名/仓库名统一，此前为 `vault-powershell`，当时改名尚未发布，代价极低）；显示名 **Open PowerShell Here**；主类：`VaultPowerShellPlugin`（内部实现名，不改）；当前版本 `0.3.0`；仓库 **Public**（2026-08-10 用户决定公开）；默认分支 `main`。
+- 插件 ID：`open-powershell-here`（**安装/更新键，永不更改**；2026-08-10 与显示名/仓库名统一，此前为 `vault-powershell`，当时改名尚未发布，代价极低）；显示名 **Open PowerShell Here**；主类：`VaultPowerShellPlugin`（内部实现名，不改）；当前版本 `0.4.0`；仓库 **Public**（2026-08-10 用户决定公开）；默认分支 `main`。
 - 内部 CSS hook class（`vault-powershell-ribbon`、`hide-vault-powershell-ribbon`）与插件 id 无关，保持原样（无用户可见影响）。
 
 ## 硬性约束（不可违反）
