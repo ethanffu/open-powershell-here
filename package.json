@@ -1,6 +1,6 @@
 {
   "name": "open-powershell-here",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Open PowerShell 7+ at the root or any folder of the current Obsidian vault.",
   "private": true,
   "license": "MIT",
