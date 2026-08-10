@@ -7,9 +7,9 @@
 - 轻量 Windows 桌面 Obsidian 插件，提供**两个入口**（用户 2026-08-09 明确批准的约束变更，覆盖旧的“Ribbon 唯一入口”约束）：
   1. **Ribbon 按钮**：打开本机 PowerShell 7+（`pwsh.exe`），初始工作目录为当前 vault 根目录；
   2. **单文件夹右键菜单**（文件资源管理器中右键单个文件夹，菜单项 `Open PowerShell here`）：以被右键文件夹的真实 Windows 绝对路径打开 PowerShell 7+。
-- **Ribbon 按钮只允许隐藏、不允许移除**（2026-08-10 用户明确指示：撤销“移除 Ribbon”的计划，改为适配 Style Settings）：通过 `styles.css` 中的 `@settings` 块（`class-toggle` → `body.hide-vault-powershell-ribbon`）提供“Hide the ribbon button”开关；Ribbon 元素固定携带 `vault-powershell-ribbon` class（与图标名无关）。不得删除 Ribbon 入口，不得把隐藏做成硬编码（必须可切换）。
+- **Ribbon 按钮只允许隐藏、不允许移除**（2026-08-10 用户明确指示：撤销“移除 Ribbon”的计划，改为适配 Style Settings）：`styles.css` 的 `@settings` 块只含**一个扁平选项** **Hide the ribbon button**（`class-toggle` → `body.hide-vault-powershell-ribbon`，**不得添加 “Ribbon button” 分组标题**）；Ribbon 元素固定携带 `vault-powershell-ribbon` class（与图标名无关）。v0.3.0 因开关在用户环境未生效被撤销：CSS 规则必须同时包含两个选择器（`.vault-powershell-ribbon` 与 `.clickable-icon[aria-label="Open PowerShell at vault root"]`）并使用 `!important` 兜底；安装文档必须要求复制 `styles.css`（方式 B 曾漏掉它，疑似失效根因）。不得删除 Ribbon 入口，不得把隐藏做成硬编码（必须可切换）。
 - 仍禁止：命令面板命令、快捷键、设置页、批量（多选）右键菜单（`files-menu`）、普通文件右键菜单、内嵌终端、自动执行脚本。
-- 插件 ID：`vault-powershell`；主类：`VaultPowerShellPlugin`；当前版本 `0.3.0`；仓库 Private，默认分支 `main`。
+- 插件 ID：`vault-powershell`；主类：`VaultPowerShellPlugin`；当前版本 `0.3.1`；仓库 Private，默认分支 `main`。
 
 ## 硬性约束（不可违反）
 
