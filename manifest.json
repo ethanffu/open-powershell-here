@@ -3,7 +3,7 @@
   "name": "Open PowerShell Here",
   "version": "0.4.0",
   "minAppVersion": "1.0.0",
-  "description": "Open PowerShell 7+ at the root or any folder of the current Obsidian vault.",
+  "description": "Open PowerShell 7+ at the vault root or any folder (Windows only).",
   "author": "ethanffu",
   "isDesktopOnly": true,
   "authorUrl": "https://github.com/ethanffu"
