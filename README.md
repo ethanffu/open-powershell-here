@@ -1,4 +1,4 @@
-# Vault PowerShell
+# Open PowerShell here
 
 [简体中文](README.zh.md)
 
@@ -8,12 +8,12 @@ Open your local **PowerShell 7 or later** from Obsidian: click the left ribbon b
 
 ## Introduction
 
-Vault PowerShell is a lightweight Obsidian desktop plugin with two entry points: a ribbon button (opens at the vault root) and a single-folder context-menu item (opens in the right-clicked folder). No embedded terminal, no command palette commands, no hotkeys, no settings page, no batch context menu, no automatic script execution. It finds the locally installed `pwsh.exe` (PowerShell 7+), verifies its version, launches it directly, and sets the target directory (vault root or right-clicked folder) as the working directory.
+Open PowerShell here is a lightweight Obsidian desktop plugin with two entry points: a ribbon button (opens at the vault root) and a single-folder context-menu item (opens in the right-clicked folder). No embedded terminal, no command palette commands, no hotkeys, no settings page, no batch context menu, no automatic script execution. It finds the locally installed `pwsh.exe` (PowerShell 7+), verifies its version, launches it directly, and sets the target directory (vault root or right-clicked folder) as the working directory.
 
 ## Features
 
 - **Ribbon button** (Lucide `terminal` icon, tooltip: `Open PowerShell at vault root`): opens PowerShell at the current vault root.
-- **Optional Style Settings integration**: with the [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) plugin installed, go to Settings → Style Settings → Vault PowerShell and enable **Hide the ribbon button** to hide the left ribbon button (hides the button only; the feature stays; the single-folder context-menu entry is unaffected).
+- **Optional Style Settings integration**: with the [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) plugin installed, go to Settings → Style Settings → Open PowerShell here and enable **Hide the ribbon button** to hide the left ribbon button (hides the button only; the feature stays; the single-folder context-menu entry is unaffected).
 - **Single-folder context menu**: right-click a **single folder** in the Obsidian file explorer and choose **`Open PowerShell here`** (Lucide `terminal` icon) to open PowerShell in that folder's real Windows absolute path. The vault root folder is supported too. The item does not appear for plain files or multi-selection.
 - Starts only the version-verified `pwsh.exe`; the real session is hosted in Windows Terminal (`wt.exe`) by default (hosting only, user-authorized). It never invokes `powershell.exe`, `cmd.exe`, `conhost.exe`, Windows `start`, WSL, Git Bash, or any other shell or terminal program, and never uses `shell: true`.
 - PowerShell lookup order:
@@ -27,9 +27,18 @@ Vault PowerShell is a lightweight Obsidian desktop plugin with two entry points:
 - The verified `pwsh.exe` path and major version are cached in memory only (re-verified after restarting Obsidian; the ribbon and the context menu share the same cache); a launch-time `ENOENT` clears the cache and retries once.
 - A single-flight "resolving" lock prevents parallel probe chains on double clicks or simultaneous triggers from both entries; once cached, every click on either entry opens a new session with no cooldown.
 
+## Who is this for?
+
+- **Windows desktop Obsidian users** who already have PowerShell 7+ (`pwsh`) installed — developers, IT/ops, scripters.
+- Anyone who often needs a PowerShell prompt **at the vault root or inside a specific folder**: run vault-local scripts, `git` operations, batch-rename or process files, or test commands against the vault's real path.
+- Anyone tired of opening a terminal and typing `cd <vault>` every time.
+- Users who prefer a **real, interactive PowerShell window** (hosted in Windows Terminal by default) over an embedded pane.
+
+**Not for:** macOS/Linux users, users on Windows PowerShell 5.1 only, users who expect an embedded terminal or a cross-platform shell launcher, or users who have not installed PowerShell 7+.
+
 ## System Requirements
 
-- **Windows desktop Obsidian only** (`isDesktopOnly: true`). On other platforms the ribbon button still shows; clicking it shows `Vault PowerShell only supports Obsidian Desktop on Windows.` The folder context-menu item is not shown on non-Windows platforms.
+- **Windows desktop Obsidian only** (`isDesktopOnly: true`). On other platforms the ribbon button still shows; clicking it shows `Open PowerShell here only supports Obsidian Desktop on Windows.` The folder context-menu item is not shown on non-Windows platforms.
 - **PowerShell 7 or later (`pwsh`) only**. Windows PowerShell 5.1 is not supported, and the plugin never downloads or installs PowerShell.
 - PowerShell 7+ must already be installed locally (Microsoft Store, MSI, or `dotnet tool install` — any install that leaves a findable `pwsh.exe`).
 - The vault must be on a local file system (`FileSystemAdapter`); the folder context-menu item is not shown for remote/non-local vaults.
@@ -41,7 +50,7 @@ Vault PowerShell is a lightweight Obsidian desktop plugin with two entry points:
 2. Restart Obsidian or reload the plugin.
 3. Option A: click the terminal icon in the left ribbon to open PowerShell at the vault root.
 4. Option B: right-click a **single folder** in the left file explorer (the vault root folder works too) and click **Open PowerShell here** to open PowerShell in that folder.
-5. Optional: to hide the ribbon button, install [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) and enable **Hide the ribbon button** under its Vault PowerShell section.
+5. Optional: to hide the ribbon button, install [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) and enable **Hide the ribbon button** under its Open PowerShell here section.
 
 On failure, a short, actionable English notice is shown and details go to the Obsidian developer console (`Ctrl+Shift+I`). On success, no notice is shown.
 
@@ -55,7 +64,7 @@ The repository is not yet published to the Obsidian community marketplace; insta
 2. Download `vault-powershell-0.3.0.zip` and unzip it — you get a `vault-powershell/` folder.
 3. Open your vault folder and go to `.obsidian/plugins/` (create it if missing).
 4. Copy the whole unzipped `vault-powershell/` folder into it.
-5. In Obsidian settings → Community plugins, enable **Vault PowerShell** (turn off Restricted Mode first if prompted).
+5. In Obsidian settings → Community plugins, enable **Open PowerShell here** (turn off Restricted Mode first if prompted).
 
 > Downloading from the Releases page requires no GitHub login; the zip can be freely forwarded to whoever needs it (unzip and install — no GitHub account required).
 

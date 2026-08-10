@@ -24,7 +24,7 @@ context-menu entry manually verified (core items); edge items pending
 1. 准备一台 Windows 桌面机，安装 Obsidian 桌面版与 PowerShell 7+（如 `winget install Microsoft.PowerShell`）。
 2. 准备一个测试 vault（不要使用真实 vault）。
 3. `npm ci && npm run build && npm run install:test`（产物进入项目内 `.test-vault/`）。
-4. 用 Obsidian 打开 `.test-vault`，在设置中启用 `Vault PowerShell` 插件。
+4. 用 Obsidian 打开 `.test-vault`，在设置中启用 `Open PowerShell here` 插件。
 5. 按下方清单逐项验收并勾选。
 
 ## 验收清单
@@ -64,7 +64,7 @@ context-menu entry manually verified (core items); edge items pending
 | 31 | **分号子文件夹明确报错**（新增） | 右键路径含 `;` 的子文件夹（如 `E:\Odd;Folder`），点击菜单项 | 显示 Notice：`PowerShell cannot be opened for paths containing a semicolon (;).`，**没有任何窗口/进程启动** | 未执行 |
 | 32 | **插件重载无重复菜单项**（新增） | 禁用→启用插件（或重载 vault），再右键文件夹 | 菜单中仍只有一项 `Open PowerShell here`（无重复项） | 未执行 |
 | 33 | **Ribbon 与右键交替使用**（新增） | 依次点击 Ribbon、右键文件夹点击菜单项、再点 Ribbon | 每次打开一个新会话窗口，工作目录分别正确 | 未执行 |
-| 34 | **Style Settings 隐藏 Ribbon**（新增） | 安装 Style Settings 插件 → 设置 → Style Settings → Vault PowerShell → 打开 **Hide the ribbon button** | 左侧 Ribbon 按钮消失；关闭开关后按钮恢复；右键菜单入口不受影响 | 未执行 |
+| 34 | **Style Settings 隐藏 Ribbon**（新增） | 安装 Style Settings 插件 → 设置 → Style Settings → Open PowerShell here → 打开 **Hide the ribbon button** | 左侧 Ribbon 按钮消失；关闭开关后按钮恢复；右键菜单入口不受影响 | 未执行 |
 
 ## 平台行为发现（脚本化实验，2026-08-06）
 

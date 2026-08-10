@@ -28,7 +28,7 @@ const HIDE_RIBBON_BODY_CLASS = 'hide-vault-powershell-ribbon';
 const MENU_ITEM_TITLE = 'Open PowerShell here';
 const MENU_ITEM_ICON = 'terminal';
 
-const NOTICE_NOT_WINDOWS = 'Vault PowerShell only supports Obsidian Desktop on Windows.';
+const NOTICE_NOT_WINDOWS = 'Open PowerShell here only supports Obsidian Desktop on Windows.';
 const NOTICE_NO_VAULT_PATH = 'Unable to resolve the local vault path.';
 const NOTICE_NOT_FOUND =
   'PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.';
@@ -56,7 +56,7 @@ export default class VaultPowerShellPlugin extends Plugin {
       buildCandidates: deps?.finder?.buildCandidates ?? buildCandidates,
       probeMajorVersion: deps?.finder?.probeMajorVersion ?? probeMajorVersion,
       env: deps?.finder?.env,
-      debug: deps?.finder?.debug ?? ((message) => console.debug(`[Vault PowerShell] ${message}`)),
+      debug: deps?.finder?.debug ?? ((message) => console.debug(`[Open PowerShell here] ${message}`)),
     });
   }
 
@@ -201,7 +201,7 @@ export default class VaultPowerShellPlugin extends Plugin {
         return;
       }
       console.error(
-        '[Vault PowerShell] launch failed on retry',
+        '[Open PowerShell here] launch failed on retry',
         retry.code,
         retry.error,
       );
@@ -209,7 +209,7 @@ export default class VaultPowerShellPlugin extends Plugin {
       return;
     }
 
-    console.error('[Vault PowerShell] launch failed', outcome.code, outcome.error);
+    console.error('[Open PowerShell here] launch failed', outcome.code, outcome.error);
     new Notice(NOTICE_START_FAILED);
   }
 }

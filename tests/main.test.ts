@@ -327,7 +327,7 @@ describe('VaultPowerShellPlugin', () => {
       const plugin = makePlugin({ platform: 'linux' });
       await plugin.openPowerShell(VAULT);
       expect(state.notices).toEqual([
-        'Vault PowerShell only supports Obsidian Desktop on Windows.',
+        'Open PowerShell here only supports Obsidian Desktop on Windows.',
       ]);
       expect(spawnState.spawns).toHaveLength(0);
     });

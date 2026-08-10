@@ -1,4 +1,4 @@
-# Vault PowerShell
+# Open PowerShell here
 
 [English](README.md)
 
@@ -8,12 +8,12 @@
 
 ## 项目简介
 
-Vault PowerShell 是一个轻量级 Obsidian 桌面插件，提供两个入口：Ribbon 按钮（在 vault 根目录打开）与单文件夹右键菜单项（在被右键文件夹打开）。它不做任何终端内嵌、命令面板命令、快捷键、设置页、批量右键菜单或自动脚本执行；它只做一件事：找到本机已安装的 `pwsh.exe`（PowerShell 7+），验证版本，然后直接启动它并把目标目录（vault 根目录或右键文件夹）设为初始工作目录。
+Open PowerShell here 是一个轻量级 Obsidian 桌面插件，提供两个入口：Ribbon 按钮（在 vault 根目录打开）与单文件夹右键菜单项（在被右键文件夹打开）。它不做任何终端内嵌、命令面板命令、快捷键、设置页、批量右键菜单或自动脚本执行；它只做一件事：找到本机已安装的 `pwsh.exe`（PowerShell 7+），验证版本，然后直接启动它并把目标目录（vault 根目录或右键文件夹）设为初始工作目录。
 
 ## 功能
 
 - **Ribbon 按钮**（Lucide `terminal` 图标，tooltip：`Open PowerShell at vault root`）：在当前 vault 根目录打开 PowerShell。
-- **Style Settings 可选集成**：安装 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) 插件后，可在 设置 → Style Settings → Vault PowerShell 中打开 **Hide the ribbon button** 隐藏左侧 Ribbon 按钮（仅隐藏按钮，功能保留；单文件夹右键菜单入口不受影响）。
+- **Style Settings 可选集成**：安装 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) 插件后，可在 设置 → Style Settings → Open PowerShell here 中打开 **Hide the ribbon button** 隐藏左侧 Ribbon 按钮（仅隐藏按钮，功能保留；单文件夹右键菜单入口不受影响）。
 - **单文件夹右键菜单**：在 Obsidian 文件资源管理器中右键**单个文件夹**，菜单显示 **`Open PowerShell here`**（Lucide `terminal` 图标），点击后在该文件夹的真实 Windows 绝对路径中打开 PowerShell。vault 根文件夹同样支持。右键普通文件、多选时不显示该菜单项。
 - 只启动经过版本验证的 `pwsh.exe`；正式会话默认以 Windows Terminal（`wt.exe`）作为控制台窗口宿主（仅宿主用途，用户已授权）。不调用 `powershell.exe`、`cmd.exe`、`conhost.exe`、`start`、WSL、Git Bash 或其他 Shell/终端程序，不使用 `shell: true`。
 - PowerShell 查找顺序：
@@ -27,9 +27,18 @@ Vault PowerShell 是一个轻量级 Obsidian 桌面插件，提供两个入口�
 - 内存缓存已验证的 `pwsh.exe` 路径与主版本号（仅存在于内存，重启 Obsidian 后重新验证；Ribbon 与右键菜单共用同一缓存）；正式启动发生 `ENOENT` 时清除缓存并重试一次。
 - 查找期间有“解析中”单飞锁，快速双击（或两个入口同时触发）不会产生多个并行探测；缓存就绪后每次点击任一入口都打开一个新会话，无冷却时间。
 
+## 适合人群
+
+- **Windows 桌面端 Obsidian 用户**，且已安装 PowerShell 7+（`pwsh`）——开发者、运维、脚本爱好者。
+- 经常需要在 **vault 根目录或某个文件夹里**打开 PowerShell 的人：运行 vault 内的脚本、`git` 操作、批量重命名/处理文件、在 vault 真实路径下测试命令。
+- 不想每次都手动打开终端再 `cd` 到 vault 路径的人。
+- 偏好**真实的、可交互的 PowerShell 窗口**（默认由 Windows Terminal 承载）而不是内嵌面板的用户。
+
+**不适合**：macOS/Linux 用户、只有 Windows PowerShell 5.1 的用户、期望内嵌终端或跨平台 Shell 启动器的用户、尚未安装 PowerShell 7+ 的用户。
+
 ## 系统要求
 
-- **仅支持 Windows 桌面端 Obsidian**（`isDesktopOnly: true`）。非 Windows 平台仍显示 Ribbon 按钮，点击时提示 `Vault PowerShell only supports Obsidian Desktop on Windows.`；文件夹右键菜单项在非 Windows 平台不显示。
+- **仅支持 Windows 桌面端 Obsidian**（`isDesktopOnly: true`）。非 Windows 平台仍显示 Ribbon 按钮，点击时提示 `Open PowerShell here only supports Obsidian Desktop on Windows.`；文件夹右键菜单项在非 Windows 平台不显示。
 - **仅支持 PowerShell 7 或更高版本（pwsh）**。不支持 Windows PowerShell 5.1（`powershell.exe`），插件也不会自动下载或安装 PowerShell。
 - 需要本机已安装 PowerShell 7+（Microsoft Store 版、MSI 安装或 `dotnet tool install` 均可，只要 `pwsh.exe` 可被找到）。
 - vault 必须是本地文件系统 vault（`FileSystemAdapter`）；远程/非本地 vault 不显示文件夹右键菜单项。
@@ -41,7 +50,7 @@ Vault PowerShell 是一个轻量级 Obsidian 桌面插件，提供两个入口�
 2. 重启 Obsidian 或重新加载插件。
 3. 方式一：点击左侧 Ribbon 中的终端图标，在 vault 根目录打开 PowerShell。
 4. 方式二：在左侧文件资源管理器中右键**单个文件夹**（包括 vault 根文件夹），点击 **Open PowerShell here**，在该文件夹打开 PowerShell。
-5. （可选）不想看到 Ribbon 按钮时：安装 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) 插件，在其设置 → Vault PowerShell 中打开 **Hide the ribbon button**。
+5. （可选）不想看到 Ribbon 按钮时：安装 [Style Settings](https://github.com/mgmeyers/obsidian-style-settings) 插件，在其设置 → Open PowerShell here 中打开 **Hide the ribbon button**。
 
 失败时显示简短、可操作的英文 Notice，详细错误写入 Obsidian 开发者控制台（`Ctrl+Shift+I`）。成功时不显示 Notice。
 
@@ -55,7 +64,7 @@ Vault PowerShell 是一个轻量级 Obsidian 桌面插件，提供两个入口�
 2. 下载 `vault-powershell-0.3.0.zip`，解压得到 `vault-powershell/` 文件夹。
 3. 找到你的 vault 目录，进入 `.obsidian/plugins/`（不存在则创建）。
 4. 把解压出的 `vault-powershell/` 整个文件夹复制进去。
-5. 在 Obsidian 设置 → 第三方插件中启用 **Vault PowerShell**（若提示受限模式，先关闭它）。
+5. 在 Obsidian 设置 → 第三方插件中启用 **Open PowerShell here**（若提示受限模式，先关闭它）。
 
 > Release 页面下载无需 GitHub 登录；zip 可自由转发给需要的人（解压即用，无需 GitHub 账号）。
 
