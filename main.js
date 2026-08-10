@@ -113,7 +113,7 @@ function runExecFile(file, args, options) {
   return new Promise((resolve, reject) => {
     (0, import_node_child_process.execFile)(file, args, options, (error, stdout, _stderr) => {
       if (error !== null) {
-        reject(error);
+        reject(error instanceof Error ? error : new Error(String(error)));
         return;
       }
       const text = typeof stdout === "string" ? stdout : stdout.toString("utf8");
