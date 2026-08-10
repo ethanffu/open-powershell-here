@@ -29,3 +29,7 @@ desktop.ini
 .idea/
 .vscode/
 *.swp
+
+# Local test builds (never committed)
+dist-zip/
+open-powershell-here-*.zip
