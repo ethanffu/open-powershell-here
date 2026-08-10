@@ -8,7 +8,7 @@
 
 在 Obsidian 中打开本机 **PowerShell 7 或更高版本**：点击左侧 Ribbon 按钮在 vault 根目录打开，或在 Obsidian 左侧**文件列表**中右键**单个文件夹**，从菜单选择 **Open PowerShell here** 在该文件夹打开。
 
-> 从最新 GitHub Release 安装（见下文）或从源码构建。插件尚未发布到 Obsidian 社区市场。
+> ✅ **已上架 [Obsidian 社区市场](https://community.obsidian.md)**——在 设置 → 第三方插件 → 浏览 中搜索 **Open PowerShell Here** 即可安装。手动安装（GitHub Release zip）与从源码构建同样支持，见下文。
 
 ## 项目简介
 
@@ -62,7 +62,7 @@ Open PowerShell Here 是一个轻量级 Obsidian 桌面插件，提供两个入�
 
 ## 手动安装方式
 
-仓库尚未发布到 Obsidian 社区市场，可通过以下任一方式安装：
+插件**已上架 Obsidian 社区市场**，推荐安装方式：设置 → 第三方插件 → 浏览 → 搜索 **Open PowerShell Here**。手动安装备选：
 
 **方式 A：从 GitHub Release 下载 zip（推荐，无需命令行）**
 
@@ -118,7 +118,7 @@ npm run verify  # lint + typecheck + test + build 全量验证
 - 仅支持 Windows；仅支持 PowerShell 7+；不支持 5.1；仅支持本地文件系统 vault。
 - 正式会话默认以 Windows Terminal（`wt.exe`）作为控制台窗口宿主（用户授权的约束变更，v0.1 直连方案实测会闪退）；`wt.exe` 缺失时回退为直接启动 `pwsh.exe`（从终端启动 Obsidian 时可用）。插件始终不调用 `cmd.exe`、`powershell.exe`、`conhost.exe`、`start` 或 `shell: true`。
 - **含 `;` 的目标路径**（vault 根目录或右键文件夹）不受支持（Windows Terminal 会把分号当作命令分隔符，实测确认）；此类路径**不会启动任何进程**，而是显示 Notice：`PowerShell cannot be opened for paths containing a semicolon (;).`。其他特殊字符（空格、`&`、括号、单引号、中文）均已实测安全。
-- 仓库已为 **Public**（2026-08-10 起），但尚未发布到 Obsidian 社区市场；主要通过手动复制构建产物安装。
+- 仓库已为 **Public**（2026-08-10 起），并**已上架 Obsidian 社区市场**（2026-08-10 评审通过）；可通过社区插件浏览安装，或手动复制构建产物安装。
 
 ## 开发命令
 

@@ -8,7 +8,7 @@
 
 Open your local **PowerShell 7 or later** from Obsidian: click the left ribbon button to open it at the vault root, or right-click a single folder in Obsidian's file explorer (the left sidebar file list) and choose **Open PowerShell here** to open it in that folder (the vault root folder works too).
 
-> Install from the latest GitHub Release (see below) or build from source. The plugin is not yet published to the Obsidian community marketplace.
+> ✅ **Published on the [Obsidian community marketplace](https://community.obsidian.md)** — install it from Settings → Community plugins → Browse → search **Open PowerShell Here**. Manual install (GitHub Release zip) and building from source are also supported, see below.
 
 ## Introduction
 
@@ -62,7 +62,7 @@ On failure, a short, actionable English notice is shown and details go to the Ob
 
 ## Manual Installation
 
-The repository is not yet published to the Obsidian community marketplace; install via either option:
+The plugin **is published on the Obsidian community marketplace**; the recommended install is Settings → Community plugins → Browse → search **Open PowerShell Here**. Manual install options:
 
 **Option A: Download the zip from GitHub Releases (recommended, no CLI needed)**
 
@@ -118,7 +118,7 @@ npm run verify  # lint + typecheck + test + build
 - Windows only; PowerShell 7+ only; 5.1 is not supported; local file system vaults only.
 - The real session is hosted in Windows Terminal (`wt.exe`) by default (user-authorized constraint change; the v0.1 direct-spawn build was verified to flash-close in real use). If `wt.exe` is missing, the plugin falls back to a direct `pwsh.exe` spawn (usable when Obsidian was started from a terminal). The plugin never invokes `cmd.exe`, `powershell.exe`, `conhost.exe`, Windows `start`, or `shell: true`.
 - **Target paths containing `;` are not supported** (Windows Terminal treats `;` as a command separator — verified). For such paths (vault root or right-clicked folder) **no process is started at all**; the plugin shows the notice `PowerShell cannot be opened for paths containing a semicolon (;).` All other special characters (spaces, `&`, parentheses, single quotes, CJK) are verified safe.
-- The repository is **Public** (since 2026-08-10) but not yet published to the Obsidian community marketplace; install by copying the build artifacts.
+- The repository is **Public** (since 2026-08-10) and **published on the Obsidian community marketplace** (review passed 2026-08-10); install from the in-app community plugins browser or by copying the build artifacts.
 
 ## Development Commands
 
