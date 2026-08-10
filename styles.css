@@ -4,16 +4,18 @@ name: Vault PowerShell
 id: vault-powershell
 settings:
     -
-        id: hide-ribbon-button
+        id: hide-vault-powershell-ribbon
         title: Hide the ribbon button
         description: 'Hide the "Open PowerShell at vault root" button in the left ribbon. The single-folder context-menu entry is unaffected.'
         type: class-toggle
-        addClass: hide-vault-powershell-ribbon
 
 */
 
-/* Hide via the stable class added in main.ts, with a fallback on the
-   tooltip (aria-label) Obsidian sets from the ribbon title. */
+/* IMPORTANT: for class-toggle, Style Settings applies the SETTING ID (not
+   `addClass`, which is ignored) as the class on <body>. Keep this selector
+   in sync with HIDE_RIBBON_BODY_CLASS in src/main.ts — main.ts also
+   enforces the hide via inline style (MutationObserver on body class), so
+   hiding works even if the ribbon DOM/theme CSS changes. */
 body.hide-vault-powershell-ribbon .vault-powershell-ribbon,
 body.hide-vault-powershell-ribbon .clickable-icon[aria-label="Open PowerShell at vault root"] {
   display: none !important;

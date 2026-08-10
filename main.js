@@ -275,6 +275,7 @@ var PowerShellFinder = class {
 // src/main.ts
 var RIBBON_ICON = "terminal";
 var RIBBON_TOOLTIP = "Open PowerShell at vault root";
+var HIDE_RIBBON_BODY_CLASS = "hide-vault-powershell-ribbon";
 var MENU_ITEM_TITLE = "Open PowerShell here";
 var MENU_ITEM_ICON = "terminal";
 var NOTICE_NOT_WINDOWS = "Vault PowerShell only supports Obsidian Desktop on Windows.";
@@ -286,6 +287,8 @@ var VaultPowerShellPlugin = class extends import_obsidian2.Plugin {
   constructor(app, manifest, deps) {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     super(app, manifest);
+    this.ribbonEl = null;
+    this.ribbonObserver = null;
     /**
      * Single-folder context-menu handler (Obsidian's public `file-menu`
      * event). Shows the item only for exactly one `TFolder` on Windows with a
@@ -322,7 +325,44 @@ var VaultPowerShellPlugin = class extends import_obsidian2.Plugin {
       void this.openPowerShell(getVaultRootPath(this.app.vault));
     });
     ribbonEl.addClass("vault-powershell-ribbon");
+    this.ribbonEl = ribbonEl;
+    this.setupRibbonVisibilityEnforcement();
     this.registerEvent(this.app.workspace.on("file-menu", this.onFileMenu));
+  }
+  onunload() {
+    var _a;
+    (_a = this.ribbonObserver) == null ? void 0 : _a.disconnect();
+    this.ribbonObserver = null;
+    this.ribbonEl = null;
+    super.onunload();
+  }
+  /**
+   * Enforce the Style Settings hide toggle in JS, on top of the styles.css
+   * rule: when `HIDE_RIBBON_BODY_CLASS` is present on <body>, hide the
+   * ribbon element via inline style. This makes the toggle work regardless
+   * of theme CSS or future ribbon DOM changes (the CSS rule alone failed in
+   * the user's environment until the body-class mismatch was fixed).
+   *
+   * Skipped outside a DOM environment (automated tests).
+   */
+  setupRibbonVisibilityEnforcement() {
+    if (typeof document === "undefined" || typeof MutationObserver === "undefined") {
+      return;
+    }
+    const apply = () => {
+      if (this.ribbonEl === null) {
+        return;
+      }
+      this.ribbonEl.style.display = document.body.classList.contains(
+        HIDE_RIBBON_BODY_CLASS
+      ) ? "none" : "";
+    };
+    this.ribbonObserver = new MutationObserver(apply);
+    this.ribbonObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"]
+    });
+    apply();
   }
   /**
    * Shared launch flow for both entry points (ribbon and folder context

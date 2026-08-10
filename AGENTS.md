@@ -7,9 +7,12 @@
 - 轻量 Windows 桌面 Obsidian 插件，提供**两个入口**（用户 2026-08-09 明确批准的约束变更，覆盖旧的“Ribbon 唯一入口”约束）：
   1. **Ribbon 按钮**：打开本机 PowerShell 7+（`pwsh.exe`），初始工作目录为当前 vault 根目录；
   2. **单文件夹右键菜单**（文件资源管理器中右键单个文件夹，菜单项 `Open PowerShell here`）：以被右键文件夹的真实 Windows 绝对路径打开 PowerShell 7+。
-- **Ribbon 按钮只允许隐藏、不允许移除**（2026-08-10 用户明确指示：撤销“移除 Ribbon”的计划，改为适配 Style Settings）：`styles.css` 的 `@settings` 块只含**一个扁平选项** **Hide the ribbon button**（`class-toggle` → `body.hide-vault-powershell-ribbon`，**不得添加 “Ribbon button” 分组标题**）；Ribbon 元素固定携带 `vault-powershell-ribbon` class（与图标名无关）。v0.3.0 因开关在用户环境未生效被撤销：CSS 规则必须同时包含两个选择器（`.vault-powershell-ribbon` 与 `.clickable-icon[aria-label="Open PowerShell at vault root"]`）并使用 `!important` 兜底；安装文档必须要求复制 `styles.css`（方式 B 曾漏掉它，疑似失效根因）。不得删除 Ribbon 入口，不得把隐藏做成硬编码（必须可切换）。
+- **Ribbon 按钮只允许隐藏、不允许移除**（2026-08-10 用户明确指示：撤销“移除 Ribbon”的计划，改为适配 Style Settings）：`styles.css` 的 `@settings` 块只含**一个扁平选项** **Hide the ribbon button**（`class-toggle`，**不得添加 “Ribbon button” 分组标题**）。
+  - **关键机制（踩坑后确认，读 Style Settings 源码验证）**：`class-toggle` 加到 `<body>` 的类名是**设置项 `id`**（`SettingsManager.ts` 中 `document.body.classList.add(setting.id)`；`addClass` 属性已被新版 Style Settings 忽略）。因此 `id` 必须等于想要匹配的 body 类名，CSS 选择器与 `main.ts` 的 `HIDE_RIBBON_BODY_CLASS` 常量必须保持一致。
+  - **双重保障**：CSS 双选择器（`.vault-powershell-ribbon` + `.clickable-icon[aria-label="Open PowerShell at vault root"]`，`display: none !important`）；同时 `main.ts` 用 `MutationObserver` 监听 body class 变化，以内联样式强制隐藏/恢复按钮（不依赖任何 CSS/DOM 假设，Obsidian 1.13.6 实测环境同样适用）。
+  - 安装文档必须要求复制 `styles.css`。不得删除 Ribbon 入口，不得把隐藏做成硬编码（必须可切换）。
 - 仍禁止：命令面板命令、快捷键、设置页、批量（多选）右键菜单（`files-menu`）、普通文件右键菜单、内嵌终端、自动执行脚本。
-- 插件 ID：`vault-powershell`；主类：`VaultPowerShellPlugin`；当前版本 `0.3.1`；仓库 Private，默认分支 `main`。
+- 插件 ID：`vault-powershell`；主类：`VaultPowerShellPlugin`；当前版本 `0.3.0`；仓库 Private，默认分支 `main`。
 
 ## 硬性约束（不可违反）
 
@@ -52,7 +55,7 @@
   ```
   `origin`（HTTPS）保留用于 `gh` 读取/API 操作；不要删除 deploy key。若日后的机器上没有该 deploy key，且本次提交不修改 `.github/workflows/`，可用 gh 凭据执行普通 HTTPS 推送（`gh auth setup-git` 后 `git push origin main`）；若 token 日后获得 `workflow` scope（`gh auth refresh -s workflow`），可回归普通 `git push origin main`。
 - 构建或测试失败时不得创建声称“已完成”的提交；用户要求保存进度时可提交 WIP 并明确说明。
-- 版本发布（tag/Release/版本号/versions.json 更新）只在用户明确要求时进行；普通提交不创建 tag、不创建 Release、不升版本号。
+- 版本发布（tag/Release/版本号/versions.json 更新）只在用户明确要求时进行；普通提交不创建 tag、不创建 Release、不升版本号。**用户 2026-08-10 补充指示：功能经用户实机确认后才可发布 Release；版本号遵循 0.1.1 → 0.2.0 → 0.3.0 的逐次规律（勿跳号）。**
 - 自动化验证、构建、真实 Windows GUI 验证、Git 提交、GitHub 推送、README/About 同步必须分开如实报告，不得笼统声称“全部完成”。
 
 ## 参考文件

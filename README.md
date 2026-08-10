@@ -51,8 +51,8 @@ Vault PowerShell 是一个轻量级 Obsidian 桌面插件，提供两个入口�
 
 **方式 A：从 GitHub Release 下载 zip（推荐，无需命令行）**
 
-1. 用浏览器打开仓库 Release 页面（需登录 GitHub）：`https://github.com/ethanffu/vault-powershell/releases`（或直接访问 v0.3.1 资产页）。
-2. 下载 `vault-powershell-0.3.1.zip`，解压得到 `vault-powershell/` 文件夹。
+1. 用浏览器打开仓库 Release 页面（需登录 GitHub）：`https://github.com/ethanffu/vault-powershell/releases`（或直接访问 v0.3.0 资产页）。
+2. 下载 `vault-powershell-0.3.0.zip`，解压得到 `vault-powershell/` 文件夹。
 3. 找到你的 vault 目录，进入 `.obsidian/plugins/`（不存在则创建）。
 4. 把解压出的 `vault-powershell/` 整个文件夹复制进去。
 5. 在 Obsidian 设置 → 第三方插件中启用 **Vault PowerShell**（若提示受限模式，先关闭它）。
@@ -125,7 +125,7 @@ npm run verify  # lint + typecheck + test + build 全量验证
 - 用户在真实 Obsidian 中实测（2026-08-08）：wt 宿主版的 Ribbon 入口可正常打开交互式 PowerShell 窗口，`Get-Location` 为 vault 根目录、版本 ≥ 7、关闭 Obsidian 后会话继续运行、插件重启后自动加载。
 - 用户在真实 Obsidian 中实测（2026-08-09）：文件夹右键菜单入口可正常使用——右键单个文件夹出现 `Open PowerShell here`（终端图标），点击后在该文件夹真实绝对路径打开可交互 PowerShell，`Get-Location` 正确。
 - 分号文件夹报错、vault 根文件夹右键、文件右键不显示、插件重载去重等边缘项**尚未逐一实机验证**（见 MANUAL_TESTS.md #28–#33）；剩余低优先级项（特殊字符路径实机验证、wt 缺失回退、UNC、未安装场景等）同样未逐一实机验证，其中多项已有脚本化实验/自动化测试覆盖。
-- 用户要求移除 Ribbon 入口的计划已撤销（2026-08-10）：保留 Ribbon 按钮，改为 Style Settings 集成（`styles.css` 提供 **Hide the ribbon button** 开关）。v0.3.0 因该开关在用户环境中未生效而撤销；v0.3.1 修复：去掉多余的 “Ribbon button” 分组标题、CSS 改为双选择器（自定义 class + tooltip aria-label）并用 `!important` 兜底，同时修正安装说明（方式 B 必须复制 `styles.css`）。该功能尚待真实 Obsidian 实机验证。
+- 用户要求移除 Ribbon 入口的计划已撤销（2026-08-10）：保留 Ribbon 按钮，改为 Style Settings 集成（`styles.css` 提供 **Hide the ribbon button** 开关）。首次实现（曾以 v0.3.0/v0.3.1 名义发布后均撤销）在用户环境中不生效，**真实根因**：Style Settings 的 `class-toggle` 把**设置项 `id`**（而非 `addClass`，该属性被忽略）加到 `<body>`，此前 CSS 选择器与 body 类名不匹配。修复：设置项 `id` 即类名；CSS 双选择器（自定义 class + tooltip `aria-label`）+ `!important`；并在 `main.ts` 中用 MutationObserver 监听 body 类、以内联样式强制隐藏按钮（不依赖任何 CSS/DOM 假设）。**Release 待用户实机确认后另行发布（用户指示：经同意才 release，版本号 0.3.0）。**
 
 ## License
 

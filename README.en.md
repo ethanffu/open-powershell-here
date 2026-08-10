@@ -51,8 +51,8 @@ The private repository is not published to the Obsidian community marketplace; i
 
 **Option A: Download the zip from GitHub Releases (recommended, no CLI needed)**
 
-1. In a browser (GitHub login required), open the repository's Releases page: `https://github.com/ethanffu/vault-powershell/releases` (or go directly to the v0.3.1 assets page).
-2. Download `vault-powershell-0.3.1.zip` and unzip it — you get a `vault-powershell/` folder.
+1. In a browser (GitHub login required), open the repository's Releases page: `https://github.com/ethanffu/vault-powershell/releases` (or go directly to the v0.3.0 assets page).
+2. Download `vault-powershell-0.3.0.zip` and unzip it — you get a `vault-powershell/` folder.
 3. Open your vault folder and go to `.obsidian/plugins/` (create it if missing).
 4. Copy the whole unzipped `vault-powershell/` folder into it.
 5. In Obsidian settings → Community plugins, enable **Vault PowerShell** (turn off Restricted Mode first if prompted).
@@ -125,7 +125,7 @@ npm run verify  # lint + typecheck + test + build
 - Verified in real Obsidian (2026-08-08): the Windows Terminal-hosted build's ribbon entry opens a working interactive PowerShell window; `Get-Location` equals the vault root, version >= 7, the session survives closing Obsidian, and the plugin auto-loads after restart.
 - Verified in real Obsidian (2026-08-09): the folder context-menu entry works — right-clicking a single folder shows `Open PowerShell here` (terminal icon), and clicking it opens an interactive PowerShell in that folder's real absolute path (`Get-Location` correct).
 - Edge items — semicolon-folder notice, vault root folder right-click, no item for files, no duplicates after plugin reload — have **not been individually verified on the real machine yet** (see MANUAL_TESTS.md #28–#33); remaining low-priority items (special-character paths on the real machine, wt-missing fallback, UNC, missing-install scenarios) are likewise unverified individually, several already covered by scripted experiments or automated tests.
-- The plan to remove the ribbon entry was reversed (2026-08-10): the ribbon button stays, and the plugin ships a `styles.css` Style Settings block with a single **Hide the ribbon button** toggle. v0.3.0 was revoked because the toggle did not hide the button in the user's environment; v0.3.1 fixes it: the redundant “Ribbon button” group heading was dropped, the CSS now uses two selectors (the custom class plus the tooltip `aria-label`) with `!important` as a fallback, and the install docs were corrected (Option B must copy `styles.css`). This feature has not yet been verified in a real Obsidian instance.
+- The plan to remove the ribbon entry was reversed (2026-08-10): the ribbon button stays, and the plugin ships a `styles.css` Style Settings block with a single **Hide the ribbon button** toggle. The first attempts (published as v0.3.0/v0.3.1 and both revoked) did not hide the button in the user's environment. **Actual root cause:** for `class-toggle`, Style Settings applies the **setting `id`** (not `addClass`, which is ignored) to `<body>`; the previous CSS selector never matched the body class. Fix: the setting id IS the class name; the CSS uses two selectors (custom class + tooltip `aria-label`) with `!important`; and `main.ts` additionally enforces the hide via inline style through a MutationObserver on the body class, so hiding does not depend on any CSS/DOM assumption. **Release is pending the user's real-machine confirmation (per user instruction: release only after approval; version 0.3.0).**
 
 ## License
 

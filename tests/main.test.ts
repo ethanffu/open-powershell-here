@@ -106,6 +106,47 @@ function rightClick(target: unknown): Menu {
   return menu;
 }
 
+/**
+ * Run `fn` with a minimal DOM environment (fake `document.body` classList
+ * and a no-op MutationObserver) so the Style Settings visibility
+ * enforcement in `setupRibbonVisibilityEnforcement` actually runs. Restores
+ * the previous globals afterwards.
+ */
+function withFakeDom(
+  bodyHasHideClass: boolean,
+  fn: () => void,
+): void {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  const savedDocument = globals.document;
+  const savedObserver = globals.MutationObserver;
+  globals.document = {
+    body: {
+      classList: {
+        contains: (cls: string) =>
+          cls === 'hide-vault-powershell-ribbon' && bodyHasHideClass,
+      },
+    },
+  };
+  globals.MutationObserver = class {
+    observe(): void {}
+    disconnect(): void {}
+  };
+  try {
+    fn();
+  } finally {
+    if (savedDocument === undefined) {
+      delete globals.document;
+    } else {
+      globals.document = savedDocument;
+    }
+    if (savedObserver === undefined) {
+      delete globals.MutationObserver;
+    } else {
+      globals.MutationObserver = savedObserver;
+    }
+  }
+}
+
 describe('VaultPowerShellPlugin', () => {
   beforeEach(() => {
     resetState();
@@ -150,6 +191,24 @@ describe('VaultPowerShellPlugin', () => {
       // toggles `body.hide-vault-powershell-ribbon`; the class must be
       // icon-independent so the CSS survives icon changes.
       expect(state.ribbonClasses).toContain('vault-powershell-ribbon');
+    });
+
+    it('enforces hiding via inline style when the body class is present (DOM)', () => {
+      withFakeDom(true, () => {
+        const plugin = makePlugin();
+        plugin.onload();
+        expect(state.ribbonElements).toHaveLength(1);
+        expect(state.ribbonElements[0].style.display).toBe('none');
+      });
+    });
+
+    it('keeps the ribbon visible when the body class is absent (DOM)', () => {
+      withFakeDom(false, () => {
+        const plugin = makePlugin();
+        plugin.onload();
+        expect(state.ribbonElements).toHaveLength(1);
+        expect(state.ribbonElements[0].style.display).toBe('');
+      });
     });
   });
 

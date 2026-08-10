@@ -95,13 +95,20 @@ export class Plugin {
     this.manifest = manifest;
   }
 
-  addRibbonIcon(icon: string, tooltip: string, callback: () => void): { addClass: (cls: string) => void } {
+  addRibbonIcon(
+    icon: string,
+    tooltip: string,
+    callback: () => void,
+  ): { addClass: (cls: string) => void; style: { display: string } } {
     state.ribbonCalls.push([icon, tooltip, callback]);
-    return {
+    const el = {
       addClass: (cls: string) => {
         state.ribbonClasses.push(cls);
       },
+      style: { display: '' },
     };
+    state.ribbonElements.push(el);
+    return el;
   }
 
   registerEvent(ref: () => void): void {
@@ -128,6 +135,8 @@ export const state = {
   ribbonCalls: [] as Array<[string, string, () => void]>,
   /** CSS classes added to the ribbon element (Style Settings hook). */
   ribbonClasses: [] as string[],
+  /** Fake ribbon elements returned by addRibbonIcon (for style assertions). */
+  ribbonElements: [] as Array<{ style: { display: string } }>,
   registerEventCalls: [] as Array<() => void>,
   workspaceOnCalls: [] as Array<[string, (...args: unknown[]) => unknown]>,
   workspaceHandlers: new Map<string, Array<(...args: unknown[]) => unknown>>(),
@@ -137,6 +146,7 @@ export function resetState(): void {
   state.notices.length = 0;
   state.ribbonCalls.length = 0;
   state.ribbonClasses.length = 0;
+  state.ribbonElements.length = 0;
   state.registerEventCalls.length = 0;
   state.workspaceOnCalls.length = 0;
   state.workspaceHandlers.clear();

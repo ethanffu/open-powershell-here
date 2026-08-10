@@ -17,6 +17,14 @@ import { PowerShellFinder, type FinderDeps } from './powershell/finder';
 const RIBBON_ICON = 'terminal';
 const RIBBON_TOOLTIP = 'Open PowerShell at vault root';
 
+/**
+ * Body class applied by Style Settings when its "Hide the ribbon button"
+ * class-toggle is ON. IMPORTANT: Style Settings uses the SETTING ID as the
+ * body class for class-toggle settings (addClass is ignored) — see
+ * styles.css, whose selectors must stay in sync with this constant.
+ */
+const HIDE_RIBBON_BODY_CLASS = 'hide-vault-powershell-ribbon';
+
 const MENU_ITEM_TITLE = 'Open PowerShell here';
 const MENU_ITEM_ICON = 'terminal';
 
@@ -38,6 +46,8 @@ export interface PluginDeps {
 export default class VaultPowerShellPlugin extends Plugin {
   private readonly finder: PowerShellFinder;
   private readonly platform: NodeJS.Platform;
+  private ribbonEl: HTMLElement | null = null;
+  private ribbonObserver: MutationObserver | null = null;
 
   constructor(app: App, manifest: PluginManifest, deps?: Partial<PluginDeps>) {
     super(app, manifest);
@@ -64,10 +74,50 @@ export default class VaultPowerShellPlugin extends Plugin {
     // toggle) — independent of the icon name, so the CSS survives icon
     // changes.
     ribbonEl.addClass('vault-powershell-ribbon');
+    this.ribbonEl = ribbonEl;
+    this.setupRibbonVisibilityEnforcement();
 
     // Lifecycle is managed through `registerEvent`: Obsidian unregisters the
     // handler on disable/reload, so reloads never leave duplicate handlers.
     this.registerEvent(this.app.workspace.on('file-menu', this.onFileMenu));
+  }
+
+  onunload(): void {
+    this.ribbonObserver?.disconnect();
+    this.ribbonObserver = null;
+    this.ribbonEl = null;
+    super.onunload();
+  }
+
+  /**
+   * Enforce the Style Settings hide toggle in JS, on top of the styles.css
+   * rule: when `HIDE_RIBBON_BODY_CLASS` is present on <body>, hide the
+   * ribbon element via inline style. This makes the toggle work regardless
+   * of theme CSS or future ribbon DOM changes (the CSS rule alone failed in
+   * the user's environment until the body-class mismatch was fixed).
+   *
+   * Skipped outside a DOM environment (automated tests).
+   */
+  private setupRibbonVisibilityEnforcement(): void {
+    if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') {
+      return;
+    }
+    const apply = (): void => {
+      if (this.ribbonEl === null) {
+        return;
+      }
+      this.ribbonEl.style.display = document.body.classList.contains(
+        HIDE_RIBBON_BODY_CLASS,
+      )
+        ? 'none'
+        : '';
+    };
+    this.ribbonObserver = new MutationObserver(apply);
+    this.ribbonObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+    apply();
   }
 
   /**
