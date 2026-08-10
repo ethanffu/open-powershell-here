@@ -15,8 +15,10 @@ settings:
    `addClass`, which is ignored) as the class on <body>. Keep this selector
    in sync with HIDE_RIBBON_BODY_CLASS in src/main.ts — main.ts also
    enforces the hide via inline style (MutationObserver on body class), so
-   hiding works even if the ribbon DOM/theme CSS changes. */
-body.hide-vault-powershell-ribbon .vault-powershell-ribbon,
-body.hide-vault-powershell-ribbon .clickable-icon[aria-label="Open PowerShell at vault root"] {
-  display: none !important;
+   hiding works even if the ribbon DOM/theme CSS changes. Specificity
+   (.workspace-ribbon) is used instead of !important to satisfy the CSS
+   review lint. */
+body.hide-vault-powershell-ribbon .workspace-ribbon .vault-powershell-ribbon,
+body.hide-vault-powershell-ribbon .workspace-ribbon .clickable-icon[aria-label="Open PowerShell at vault root"] {
+  display: none;
 }
