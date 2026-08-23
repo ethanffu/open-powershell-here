@@ -5,7 +5,7 @@
 Open your computer's native terminal directly from Obsidian without typing `cd <folder>` every time.
 
 - ⚡ **Open at Vault Root**: Click the terminal icon in the left ribbon bar.
-- 📂 **Open at Any Folder or File**: Right-click any folder or note in the file explorer and click **Open Terminal here**.
+- 📂 **Open at Any Folder or File**: Right-click any folder or note in the file explorer and click **`Open Terminal here`**.
 
 ---
 
@@ -40,7 +40,6 @@ In the left file tree:
 If you use the [Style Settings](https://obsidian.md/plugins?id=obsidian-style-settings) plugin, you can easily customize:
 
 - **Hide Ribbon Button**: Hide the left ribbon icon if you only want the right-click menu.
-- **Ribbon Icon Color**: Pick a custom accent color for the ribbon terminal icon.
 - **Terminal Selection (Linux)**: Select your preferred terminal (Ghostty, Konsole, etc.) when multiple terminals are installed.
 
 ---

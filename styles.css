@@ -14,13 +14,6 @@ settings:
         description: 'Hide the "Open Terminal at vault root" button from the left ribbon. The context-menu entry is unaffected.'
         type: class-toggle
     -
-        id: terminal-ribbon-color
-        title: Ribbon icon color
-        description: 'Custom color for the terminal ribbon button.'
-        type: variable-color
-        format: hex
-        default: ''
-    -
         id: terminal-selection-section
         title: Terminal Selection (Linux)
         type: heading
@@ -62,18 +55,10 @@ settings:
 
 */
 
-/* 1. Hide the ribbon button (Style Settings class toggle) */
+/* Hide the ribbon button (Style Settings class toggle) */
 body.hide-vault-terminal-ribbon .workspace-ribbon .vault-terminal-ribbon,
 body.hide-vault-powershell-ribbon .workspace-ribbon .vault-powershell-ribbon,
 body.hide-vault-terminal-ribbon .workspace-ribbon .clickable-icon[aria-label*="Open"][aria-label*="at vault root"],
 body.hide-vault-powershell-ribbon .workspace-ribbon .clickable-icon[aria-label*="Open"][aria-label*="at vault root"] {
   display: none;
-}
-
-/* 2. Ribbon icon custom color */
-body .workspace-ribbon .vault-terminal-ribbon,
-body .workspace-ribbon .vault-powershell-ribbon,
-body .workspace-ribbon .vault-terminal-ribbon svg,
-body .workspace-ribbon .vault-powershell-ribbon svg {
-  color: var(--terminal-ribbon-color, inherit);
 }
