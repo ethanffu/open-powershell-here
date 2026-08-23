@@ -71,6 +71,9 @@ body.hide-vault-powershell-ribbon .workspace-ribbon .clickable-icon[aria-label*=
 }
 
 /* 2. Ribbon icon custom color */
-body .workspace-ribbon .vault-terminal-ribbon svg {
+body .workspace-ribbon .vault-terminal-ribbon,
+body .workspace-ribbon .vault-powershell-ribbon,
+body .workspace-ribbon .vault-terminal-ribbon svg,
+body .workspace-ribbon .vault-powershell-ribbon svg {
   color: var(--terminal-ribbon-color, inherit);
 }
