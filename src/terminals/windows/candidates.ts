@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { win32 } from 'node:path';
 
 /** The PATH-resolved candidate: Windows resolves this via the current PATH. */
 export const PATH_CANDIDATE = 'pwsh.exe';
@@ -27,13 +27,13 @@ export function buildCandidates(env: NodeJS.ProcessEnv = process.env): Candidate
 
   const programFiles = env.ProgramFiles;
   if (programFiles !== undefined && programFiles !== '') {
-    raw.push({ path: join(programFiles, ...PROGRAM_FILES_RELATIVE), source: 'ProgramFiles' });
+    raw.push({ path: win32.join(programFiles, ...PROGRAM_FILES_RELATIVE), source: 'ProgramFiles' });
   }
 
   const userProfile = env.USERPROFILE;
   if (userProfile !== undefined && userProfile !== '') {
     raw.push({
-      path: join(userProfile, ...DOTNET_TOOLS_RELATIVE),
+      path: win32.join(userProfile, ...DOTNET_TOOLS_RELATIVE),
       source: 'UserProfileDotnetTools',
     });
   }

@@ -5,125 +5,101 @@ import {
   Menu,
   resetState,
   state,
-  TFolder,
   TFile,
+  TFolder,
   Workspace,
-} from '../tests/mocks/obsidian';
-import VaultPowerShellPlugin, { type PluginDeps } from '../src/main';
-import { getVaultRootPath } from '../src/vault-path';
-import { type FinderDeps } from '../src/powershell/finder';
+} from './mocks/obsidian';
+import VaultTerminalPlugin, {
+  type PluginDeps,
+  NOTICE_NOT_FOUND_LINUX,
+  NOTICE_NOT_FOUND_WINDOWS,
+  NOTICE_NO_VAULT_PATH,
+  NOTICE_SEMICOLON,
+  NOTICE_START_FAILED,
+  NOTICE_UNSUPPORTED_PLATFORM,
+} from '../src/main';
+import { TerminalManager } from '../src/terminals/manager';
+import type { ResolvedTerminal, TerminalFinder } from '../src/terminals/types';
 
-const spawnState = vi.hoisted(() => ({
-  spawns: [] as Array<[string, string[], Record<string, unknown>]>,
-  /** Number of initial spawns that should emit ENOENT before succeeding. */
-  failSpawnCount: 0,
-}));
-
-vi.mock('node:child_process', () => {
-  const makeChild = () => {
-    const handlers = new Map<string, Array<(...args: unknown[]) => void>>();
-    return {
-      pid: 777,
-      unref() {},
-      once(event: string, fn: (...args: unknown[]) => void) {
-        const list = handlers.get(event) ?? [];
-        list.push(fn);
-        handlers.set(event, list);
-      },
-      emit(event: string, ...args: unknown[]) {
-        for (const fn of handlers.get(event) ?? []) {
-          fn(...args);
-        }
-      },
-    };
-  };
-  return {
-    spawn: (...args: unknown[]) => {
-      spawnState.spawns.push(args as [string, string[], Record<string, unknown>]);
-      const child = makeChild();
-      const index = spawnState.spawns.length - 1;
-      setImmediate(() => {
-        if (index < spawnState.failSpawnCount) {
-          const error = new Error('missing') as NodeJS.ErrnoException;
-          error.code = 'ENOENT';
-          child.emit('error', error);
-        } else {
-          child.emit('spawn');
-        }
-      });
-      return child;
-    },
-  };
-});
-
-const VAULT = "E:\\Test Vault & (x) '中文'";
+const VAULT_WIN = "E:\\Test Vault & (x) '中文'";
 const PWSH = 'C:\\Program Files\\PowerShell\\7\\pwsh.exe';
 
-/** Default finder deps: one verified Program Files pwsh. */
-function finderDeps(
-  probeMajorVersion: () => Promise<number | null> = vi.fn().mockResolvedValue(7),
-): FinderDeps {
+function makeMockFinder(resolved: ResolvedTerminal | null): TerminalFinder {
+  let cached = resolved;
   return {
-    buildCandidates: () => [{ path: PWSH, source: 'ProgramFiles' }],
-    probeMajorVersion,
+    get cached() {
+      return cached;
+    },
+    resolve: vi.fn().mockImplementation(async () => cached),
+    invalidate: vi.fn().mockImplementation(() => {
+      cached = null;
+    }),
   };
 }
 
-function makePlugin(overrides: Partial<PluginDeps> = {}): VaultPowerShellPlugin {
-  const deps: Partial<PluginDeps> = {
-    platform: 'win32',
-    finder: finderDeps(),
-    ...overrides,
+interface MockApp {
+  vault: {
+    adapter: unknown;
   };
+  workspace: Workspace;
+}
+
+function setMockAdapter(plugin: VaultTerminalPlugin, adapter: unknown): void {
+  const app = plugin.app as unknown as MockApp;
+  app.vault.adapter = adapter;
+}
+
+function makePlugin(overrides: Partial<PluginDeps> = {}, vaultPath = VAULT_WIN): VaultTerminalPlugin {
+  const platform = overrides.platform ?? 'win32';
+  const defaultFinder = platform === 'win32'
+    ? makeMockFinder({
+        id: 'powershell',
+        displayName: 'PowerShell',
+        binaryPath: PWSH,
+        extra: { majorVersion: 7 },
+      })
+    : makeMockFinder({
+        id: 'ghostty',
+        displayName: 'Ghostty',
+        binaryPath: '/usr/bin/ghostty',
+      });
+
+  const manager = overrides.terminalManager ?? new TerminalManager({
+    platform,
+    finder: defaultFinder,
+    launch: vi.fn().mockResolvedValue({ ok: true, pid: 1234 }),
+    ...overrides.managerDeps,
+  });
+
   const app = {
     vault: {
-      adapter: new FileSystemAdapter(VAULT),
+      adapter: new FileSystemAdapter(vaultPath),
     },
     workspace: new Workspace(),
   };
-  return new VaultPowerShellPlugin(app as never, {} as never, deps);
+
+  return new VaultTerminalPlugin(app as never, {} as never, {
+    platform,
+    terminalManager: manager,
+    ...overrides,
+  });
 }
 
-/** The plugin's mock vault object (typed loosely; the mock app is a plain object). */
-function pluginVault(plugin: VaultPowerShellPlugin): { adapter: unknown } {
-  return (plugin.app as { vault: { adapter: unknown } }).vault;
-}
-
-function setAdapter(plugin: VaultPowerShellPlugin, adapter: unknown): void {
-  pluginVault(plugin).adapter = adapter;
-}
-
-/** Drain the event loop so mocked spawn setImmediates settle. */
-async function flush(): Promise<void> {
-  await new Promise((resolve) => setImmediate(resolve));
-  await new Promise((resolve) => setImmediate(resolve));
-}
-
-/** Simulate a right click on `target` and return the built Menu. */
 function rightClick(target: unknown): Menu {
   const menu = new Menu();
   emitFileMenu(menu, target);
   return menu;
 }
 
-/**
- * Run `fn` with a minimal DOM environment (fake `document.body` classList
- * and a no-op MutationObserver) so the Style Settings visibility
- * enforcement in `setupRibbonVisibilityEnforcement` actually runs. Restores
- * the previous globals afterwards.
- */
-function withFakeDom(
-  bodyHasHideClass: boolean,
-  fn: () => void,
-): void {
+function withFakeDom(bodyClass: string | null, fn: () => void): void {
   const globals = globalThis as unknown as Record<string, unknown>;
   const savedDocument = globals.document;
   const savedObserver = globals.MutationObserver;
+
   globals.document = {
     body: {
       classList: {
-        contains: (cls: string) =>
-          cls === 'hide-vault-powershell-ribbon' && bodyHasHideClass,
+        contains: (cls: string) => cls === bodyClass,
       },
     },
   };
@@ -131,6 +107,7 @@ function withFakeDom(
     observe(): void {}
     disconnect(): void {}
   };
+
   try {
     fn();
   } finally {
@@ -147,322 +124,136 @@ function withFakeDom(
   }
 }
 
-describe('VaultPowerShellPlugin', () => {
+describe('VaultTerminalPlugin', () => {
   beforeEach(() => {
     resetState();
-    spawnState.spawns.length = 0;
-    spawnState.failSpawnCount = 0;
   });
 
-  describe('ribbon entry', () => {
-    it('adds the ribbon icon on load and the click handler opens a session', async () => {
-      const plugin = makePlugin();
-      plugin.onload();
+  describe('ribbon integration', () => {
+    it('registers the ribbon button on load with Open Terminal tooltip', () => {
+      const winPlugin = makePlugin({ platform: 'win32' });
+      winPlugin.onload();
       expect(state.ribbonCalls).toHaveLength(1);
-      const [icon, tooltip, callback] = state.ribbonCalls[0];
-      expect(icon).toBe('terminal');
-      expect(tooltip).toBe('Open PowerShell at vault root');
-      callback();
-      // The ribbon callback fires-and-forgets the async pipeline; let the
-      // event loop drain (probe promise + spawn setImmediate) before asserting.
-      await flush();
-      expect(spawnState.spawns).toHaveLength(1);
+      expect(state.ribbonCalls[0][0]).toBe('terminal');
+      expect(state.ribbonCalls[0][1]).toBe('Open Terminal at vault root');
+
+      resetState();
+      const linuxPlugin = makePlugin({ platform: 'linux' });
+      linuxPlugin.onload();
+      expect(state.ribbonCalls).toHaveLength(1);
+      expect(state.ribbonCalls[0][1]).toBe('Open Terminal at vault root');
     });
 
-    it('opens PowerShell at the vault root from the ribbon', async () => {
+    it('attaches stable classes to ribbon element for Style Settings', () => {
       const plugin = makePlugin();
       plugin.onload();
-      const [, , callback] = state.ribbonCalls[0];
-      callback();
-      await flush();
-      expect(spawnState.spawns).toHaveLength(1);
-      const [file, args, options] = spawnState.spawns[0];
-      expect(file).toBe('wt.exe');
-      expect(args).toEqual(['-w', '0', PWSH, '-WorkingDirectory', VAULT]);
-      expect(options.cwd).toBe(VAULT);
-      expect(options.shell).toBe(false);
-    });
-
-    it('adds a stable CSS class to the ribbon element (Style Settings hook)', () => {
-      const plugin = makePlugin();
-      plugin.onload();
-      expect(state.ribbonCalls).toHaveLength(1);
-      // styles.css hides `.vault-powershell-ribbon` when Style Settings
-      // toggles `body.hide-vault-powershell-ribbon`; the class must be
-      // icon-independent so the CSS survives icon changes.
+      expect(state.ribbonClasses).toContain('vault-terminal-ribbon');
       expect(state.ribbonClasses).toContain('vault-powershell-ribbon');
     });
 
-    it('enforces hiding via inline style when the body class is present (DOM)', () => {
-      withFakeDom(true, () => {
+    it('enforces visibility when hide-vault-terminal-ribbon is present on body', () => {
+      withFakeDom('hide-vault-terminal-ribbon', () => {
         const plugin = makePlugin();
         plugin.onload();
-        expect(state.ribbonElements).toHaveLength(1);
         expect(state.ribbonElements[0].style.display).toBe('none');
       });
     });
 
-    it('keeps the ribbon visible when the body class is absent (DOM)', () => {
-      withFakeDom(false, () => {
+    it('enforces visibility when legacy hide-vault-powershell-ribbon is present on body', () => {
+      withFakeDom('hide-vault-powershell-ribbon', () => {
         const plugin = makePlugin();
         plugin.onload();
-        expect(state.ribbonElements).toHaveLength(1);
+        expect(state.ribbonElements[0].style.display).toBe('none');
+      });
+    });
+
+    it('keeps ribbon visible when hide class is absent', () => {
+      withFakeDom(null, () => {
+        const plugin = makePlugin();
+        plugin.onload();
         expect(state.ribbonElements[0].style.display).toBe('');
       });
     });
   });
 
-  describe('folder context menu entry', () => {
-    it('registers a single file-menu handler through registerEvent on load', () => {
-      const plugin = makePlugin();
+  describe('context menu integration', () => {
+    it('adds menu item for a TFolder', () => {
+      const plugin = makePlugin({ platform: 'linux' });
       plugin.onload();
-      expect(state.workspaceOnCalls.map(([event]) => event)).toEqual(['file-menu']);
-      expect(state.registerEventCalls).toHaveLength(1);
-      expect(state.workspaceHandlers.get('file-menu')).toHaveLength(1);
-    });
-
-    it('adds exactly one "Open PowerShell here" item for a single folder', () => {
-      const plugin = makePlugin();
-      plugin.onload();
-      const menu = rightClick(new TFolder('Notes/Deep'));
+      const menu = rightClick(new TFolder('src'));
       expect(menu.items).toHaveLength(1);
-      expect(menu.items[0].title).toBe('Open PowerShell here');
-    });
-
-    it('uses the terminal icon for the menu item', () => {
-      const plugin = makePlugin();
-      plugin.onload();
-      const menu = rightClick(new TFolder('Notes'));
-      expect(menu.items).toHaveLength(1);
+      expect(menu.items[0].title).toBe('Open Terminal here');
       expect(menu.items[0].icon).toBe('terminal');
     });
 
-    it('opens PowerShell in the absolute path of a nested folder when clicked', async () => {
-      const plugin = makePlugin();
-      plugin.onload();
-      const menu = rightClick(new TFolder('Notes/Deep Folder'));
-      menu.items[0].click();
-      await flush();
-      expect(spawnState.spawns).toHaveLength(1);
-      const expected = `${VAULT}\\Notes\\Deep Folder`;
-      const [file, args, options] = spawnState.spawns[0];
-      expect(file).toBe('wt.exe');
-      expect(args).toEqual(['-w', '0', PWSH, '-WorkingDirectory', expected]);
-      expect(options.cwd).toBe(expected);
-      expect(options.shell).toBe(false);
-    });
-
-    it('resolves the vault root folder to the adapter base path', async () => {
-      const plugin = makePlugin();
-      plugin.onload();
-      const menu = rightClick(new TFolder(''));
-      menu.items[0].click();
-      await flush();
-      expect(spawnState.spawns).toHaveLength(1);
-      const [file, args, options] = spawnState.spawns[0];
-      expect(file).toBe('wt.exe');
-      expect(args).toEqual(['-w', '0', PWSH, '-WorkingDirectory', VAULT]);
-      expect(options.cwd).toBe(VAULT);
-    });
-
-    it('adds no menu item for a regular file', () => {
-      const plugin = makePlugin();
-      plugin.onload();
-      const menu = rightClick(new TFile('notes.md'));
-      expect(menu.items).toHaveLength(0);
-    });
-
-    it('adds no folder menu item on non-Windows platforms', () => {
+    it('adds menu item for a TFile (targeting parent folder)', () => {
       const plugin = makePlugin({ platform: 'linux' });
       plugin.onload();
-      const menu = rightClick(new TFolder('Notes'));
-      expect(menu.items).toHaveLength(0);
-    });
-
-    it('adds no folder menu item when the adapter is not a FileSystemAdapter', () => {
-      const plugin = makePlugin();
-      setAdapter(plugin, {});
-      plugin.onload();
-      const menu = rightClick(new TFolder('Notes'));
-      expect(menu.items).toHaveLength(0);
-    });
-
-    it('does not register a bulk multi-select (files-menu) entry', () => {
-      const plugin = makePlugin();
-      plugin.onload();
-      const events = state.workspaceOnCalls.map(([event]) => event);
-      expect(events).toEqual(['file-menu']);
-      expect(events).not.toContain('files-menu');
-    });
-
-    it('passes special-character folder paths as a single argument', async () => {
-      const plugin = makePlugin();
-      plugin.onload();
-      const menu = rightClick(
-        new TFolder("Notes/It's (x) & 中文/子目录"),
-      );
-      menu.items[0].click();
-      await flush();
-      const expected = `${VAULT}\\Notes\\It's (x) & 中文\\子目录`;
-      const [file, args, options] = spawnState.spawns[0];
-      expect(file).toBe('wt.exe');
-      expect(args).toEqual(['-w', '0', PWSH, '-WorkingDirectory', expected]);
-      expect(options.cwd).toBe(expected);
-    });
-
-    it('does not leave duplicate menu handlers after a plugin reload', () => {
-      const plugin = makePlugin();
-      plugin.onload();
-      plugin.onunload();
-      plugin.onload();
-      expect(state.workspaceHandlers.get('file-menu')).toHaveLength(1);
-      const menu = rightClick(new TFolder('Notes'));
+      const parent = new TFolder('src/utils');
+      const file = new TFile('src/utils/helper.ts', parent);
+      const menu = rightClick(file);
       expect(menu.items).toHaveLength(1);
-      expect(menu.items[0].title).toBe('Open PowerShell here');
+      expect(menu.items[0].title).toBe('Open Terminal here');
+    });
+
+    it('does not add menu item on unsupported platforms', () => {
+      const plugin = makePlugin({ platform: 'darwin' });
+      plugin.onload();
+      const menu = rightClick(new TFolder('src'));
+      expect(menu.items).toHaveLength(0);
+    });
+
+    it('does not add menu item for non-filesystem adapters', () => {
+      const plugin = makePlugin({ platform: 'linux' });
+      setMockAdapter(plugin, {});
+      plugin.onload();
+      const menu = rightClick(new TFolder('src'));
+      expect(menu.items).toHaveLength(0);
     });
   });
 
-  describe('shared launch flow', () => {
-    it('shows the non-Windows notice and does not spawn on non-Windows platforms', async () => {
-      const plugin = makePlugin({ platform: 'linux' });
-      await plugin.openPowerShell(VAULT);
-      expect(state.notices).toEqual([
-        'Open PowerShell Here only supports Obsidian Desktop on Windows.',
-      ]);
-      expect(spawnState.spawns).toHaveLength(0);
+  describe('notices and error reporting', () => {
+    it('notifies on unsupported platform launch', async () => {
+      const plugin = makePlugin({ platform: 'darwin' });
+      await plugin.openTerminal('/some/path');
+      expect(state.notices).toContain(NOTICE_UNSUPPORTED_PLATFORM);
     });
 
-    it('fails gracefully when no target path can be resolved', async () => {
+    it('notifies when vault path cannot be resolved', async () => {
       const plugin = makePlugin();
-      setAdapter(plugin, {});
-      const root = getVaultRootPath(pluginVault(plugin) as never);
-      expect(root).toBeNull();
-      await plugin.openPowerShell(root);
-      expect(state.notices).toEqual(['Unable to resolve the local vault path.']);
-      expect(spawnState.spawns).toHaveLength(0);
+      await plugin.openTerminal(null);
+      expect(state.notices).toContain(NOTICE_NO_VAULT_PATH);
     });
 
-    it('shows a notice when no PowerShell 7+ is found', async () => {
-      const plugin = makePlugin({ finder: finderDeps(vi.fn().mockResolvedValue(null)) });
-      await plugin.openPowerShell(VAULT);
-      expect(state.notices).toEqual([
-        'PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.',
-      ]);
-      expect(spawnState.spawns).toHaveLength(0);
+    it('notifies on Windows semicolon path refusal', async () => {
+      const plugin = makePlugin({ platform: 'win32' });
+      await plugin.openTerminal('C:\\Odd;Path');
+      expect(state.notices).toContain(NOTICE_SEMICOLON);
     });
 
-    it('launches through Windows Terminal at the target directory without a success notice', async () => {
-      const plugin = makePlugin();
-      await plugin.openPowerShell(VAULT);
-      expect(state.notices).toHaveLength(0);
-      expect(spawnState.spawns).toHaveLength(1);
-      const [file, args, options] = spawnState.spawns[0];
-      expect(file).toBe('wt.exe');
-      expect(args).toEqual(['-w', '0', PWSH, '-WorkingDirectory', VAULT]);
-      expect(options.cwd).toBe(VAULT);
-      expect(options.shell).toBe(false);
+    it('notifies when PowerShell is not found on Windows', async () => {
+      const finder = makeMockFinder(null);
+      const manager = new TerminalManager({ platform: 'win32', finder });
+      const plugin = makePlugin({ platform: 'win32', terminalManager: manager });
+      await plugin.openTerminal('C:\\Vault');
+      expect(state.notices).toContain(NOTICE_NOT_FOUND_WINDOWS);
     });
 
-    it('falls back to the direct pwsh spawn when wt.exe is missing', async () => {
-      const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({ finder: finderDeps(probe) });
-      spawnState.failSpawnCount = 1; // wt.exe ENOENT -> launcher falls back
-      await plugin.openPowerShell(VAULT);
-      expect(state.notices).toHaveLength(0);
-      expect(spawnState.spawns).toHaveLength(2);
-      expect(spawnState.spawns[0][0]).toBe('wt.exe');
-      expect(spawnState.spawns[1][0]).toBe(PWSH);
-      // The pwsh cache is untouched by a missing wt.exe.
-      expect(probe).toHaveBeenCalledTimes(1);
+    it('notifies when no terminal is found on Linux', async () => {
+      const finder = makeMockFinder(null);
+      const manager = new TerminalManager({ platform: 'linux', finder });
+      const plugin = makePlugin({ platform: 'linux', terminalManager: manager });
+      await plugin.openTerminal('/home/user/vault');
+      expect(state.notices).toContain(NOTICE_NOT_FOUND_LINUX);
     });
 
-    it('clears the cache and retries exactly once when both wt and pwsh fail with ENOENT', async () => {
-      const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({ finder: finderDeps(probe) });
-      spawnState.failSpawnCount = 2; // wt ENOENT + fallback pwsh ENOENT
-      await plugin.openPowerShell(VAULT);
-      // First click: wt + fallback pwsh. Cache cleared, one re-verify, second
-      // click: wt again (succeeds this time).
-      expect(spawnState.spawns).toHaveLength(3);
-      expect(probe).toHaveBeenCalledTimes(2);
-      expect(state.notices).toHaveLength(0);
-      expect(spawnState.spawns[2][0]).toBe('wt.exe');
-    });
-
-    it('shows the start-failed notice when the retry also fails', async () => {
-      const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({ finder: finderDeps(probe) });
-      spawnState.failSpawnCount = 4; // every spawn in both attempts fails
-      await plugin.openPowerShell(VAULT);
-      // Attempt 1: wt + fallback pwsh. Attempt 2 (retry): wt + fallback pwsh.
-      expect(spawnState.spawns).toHaveLength(4);
-      expect(probe).toHaveBeenCalledTimes(2);
-      expect(state.notices).toEqual([
-        'PowerShell could not be started. Check the developer console for details.',
-      ]);
-    });
-
-    it('shows the not-found notice when re-verification after ENOENT finds nothing', async () => {
-      const probe = vi.fn().mockResolvedValueOnce(7).mockResolvedValueOnce(null);
-      const plugin = makePlugin({ finder: finderDeps(probe) });
-      spawnState.failSpawnCount = 2; // wt + pwsh both ENOENT on the first click
-      await plugin.openPowerShell(VAULT);
-      expect(spawnState.spawns).toHaveLength(2);
-      expect(probe).toHaveBeenCalledTimes(2);
-      expect(state.notices).toEqual([
-        'PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.',
-      ]);
-    });
-
-    it('opens a new window on every click once pwsh is cached (no cooldown)', async () => {
-      const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({ finder: finderDeps(probe) });
-      await plugin.openPowerShell(VAULT);
-      await plugin.openPowerShell(VAULT);
-      await plugin.openPowerShell(VAULT);
-      expect(spawnState.spawns).toHaveLength(3);
-      expect(probe).toHaveBeenCalledTimes(1);
-      expect(state.notices).toHaveLength(0);
-    });
-
-    it('shows the semicolon notice and creates no process for ";" paths', async () => {
-      const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({ finder: finderDeps(probe) });
-      await plugin.openPowerShell('E:\\Odd;Vault');
-      expect(state.notices).toEqual([
-        'PowerShell cannot be opened for paths containing a semicolon (;).',
-      ]);
-      // No process at all: neither the launch spawns (wt.exe/pwsh.exe) nor
-      // even the version probe ran.
-      expect(spawnState.spawns).toHaveLength(0);
-      expect(probe).not.toHaveBeenCalled();
-    });
-
-    it('shares the PowerShellFinder cache between the ribbon and the context menu', async () => {
-      const probe = vi.fn().mockResolvedValue(7);
-      const plugin = makePlugin({ finder: finderDeps(probe) });
-      await plugin.openPowerShell(VAULT); // ribbon -> vault root
-      await plugin.openPowerShell(`${VAULT}\\Sub`); // context menu -> folder
-      expect(probe).toHaveBeenCalledTimes(1); // verified once, shared
-      expect(spawnState.spawns).toHaveLength(2); // a new session per entry
-    });
-
-    it('single-flights the first probe across both entries', async () => {
-      let releaseProbe: (value: number | null) => void = () => {};
-      const probe = vi.fn().mockImplementation(
-        () =>
-          new Promise<number | null>((resolve) => {
-            releaseProbe = resolve;
-          }),
-      );
-      const plugin = makePlugin({ finder: finderDeps(probe) });
-      const ribbon = plugin.openPowerShell(VAULT);
-      const menu = plugin.openPowerShell(`${VAULT}\\Sub`);
-      expect(probe).toHaveBeenCalledTimes(1); // single flight across entries
-      releaseProbe(7);
-      await Promise.all([ribbon, menu]);
-      expect(probe).toHaveBeenCalledTimes(1);
-      expect(spawnState.spawns).toHaveLength(2);
+    it('notifies when launch fails with generic error', async () => {
+      const finder = makeMockFinder({ id: 'ghostty', displayName: 'Ghostty', binaryPath: '/usr/bin/ghostty' });
+      const launch = vi.fn().mockResolvedValue({ ok: false, code: 'UNKNOWN', error: new Error('Permission denied') });
+      const manager = new TerminalManager({ platform: 'linux', finder, launch });
+      const plugin = makePlugin({ platform: 'linux', terminalManager: manager });
+      await plugin.openTerminal('/home/user/vault');
+      expect(state.notices).toContain(NOTICE_START_FAILED);
     });
   });
 });

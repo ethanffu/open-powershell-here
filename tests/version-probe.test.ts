@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { PROBE_ARGS, PROBE_TIMEOUT_MS } from '../src/powershell/types';
+import { PROBE_ARGS, PROBE_TIMEOUT_MS } from '../src/terminals/windows/types';
 
 const { execFileMock } = vi.hoisted(() => ({ execFileMock: vi.fn() }));
 vi.mock('node:child_process', () => ({
   execFile: (...args: unknown[]) => execFileMock(...args),
 }));
 
-import { parseMajorVersion, probeMajorVersion } from '../src/powershell/version-probe';
+import { parseMajorVersion, probeMajorVersion } from '../src/terminals/windows/version-probe';
 
 type ExecFileCallback = (
   error: Error | null,

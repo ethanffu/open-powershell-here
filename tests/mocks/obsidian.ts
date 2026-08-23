@@ -3,13 +3,6 @@
  * runtime entry, so Vite/Vitest cannot resolve it). vitest.config.ts aliases
  * `obsidian` to this file for tests; the real plugin build keeps `obsidian`
  * external (see esbuild.config.mjs).
- *
- * The classes mirror the small surface the plugin uses, and `state` records
- * observable side effects (notices, ribbon registrations, workspace event
- * registrations) for assertions. `Menu`/`MenuItem`/`TFolder`/`TFile` back
- * the single-folder file-menu entry; `Workspace.on` returns an unregister
- * function that `Plugin.onunload()` calls, mirroring Obsidian's
- * `registerEvent` lifecycle so reloads never leave duplicate handlers.
  */
 
 export class FileSystemAdapter {
@@ -18,8 +11,6 @@ export class FileSystemAdapter {
     return this.basePath;
   }
   getFullPath(path: string): string {
-    // Mirror the real adapter: join the base path with the (normalized)
-    // folder path; the empty path resolves to the base path itself.
     const normalized = path.replace(/[\\/]+/g, '\\').replace(/\\+$/, '');
     return normalized === '' ? this.basePath : `${this.basePath}\\${normalized}`;
   }
@@ -30,7 +21,10 @@ export class TFolder {
 }
 
 export class TFile {
-  constructor(public path: string) {}
+  constructor(
+    public path: string,
+    public parent: TFolder | null = null,
+  ) {}
 }
 
 export class MenuItem {
@@ -115,7 +109,6 @@ export class Plugin {
     state.registerEventCalls.push(ref);
   }
 
-  /** Mirrors Obsidian: unregister all registered event refs on unload. */
   onunload(): void {
     for (const ref of state.registerEventCalls) {
       ref();
@@ -133,9 +126,7 @@ export class Notice {
 export const state = {
   notices: [] as string[],
   ribbonCalls: [] as Array<[string, string, () => void]>,
-  /** CSS classes added to the ribbon element (Style Settings hook). */
   ribbonClasses: [] as string[],
-  /** Fake ribbon elements returned by addRibbonIcon (for style assertions). */
   ribbonElements: [] as Array<{ style: { display: string } }>,
   registerEventCalls: [] as Array<() => void>,
   workspaceOnCalls: [] as Array<[string, (...args: unknown[]) => unknown]>,
@@ -152,7 +143,6 @@ export function resetState(): void {
   state.workspaceHandlers.clear();
 }
 
-/** Simulate Obsidian firing the `file-menu` event for every registered handler. */
 export function emitFileMenu(menu: Menu, file: unknown): void {
   for (const handler of state.workspaceHandlers.get('file-menu') ?? []) {
     handler(menu, file);

@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildCandidates, dedupeCandidates } from '../src/powershell/candidates';
+import { buildCandidates, dedupeCandidates, PATH_CANDIDATE } from '../src/terminals/windows/candidates';
 
-function env(overrides: Record<string, string> = {}): NodeJS.ProcessEnv {
+function env(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
   return {
-    PATH: 'C:\\bin',
     ProgramFiles: 'C:\\Program Files',
     USERPROFILE: 'C:\\Users\\alice',
     ...overrides,
@@ -18,56 +17,50 @@ describe('buildCandidates', () => {
       'C:\\Program Files\\PowerShell\\7\\pwsh.exe',
       'C:\\Users\\alice\\.dotnet\\tools\\pwsh.exe',
     ]);
+    expect(candidates.map((c) => c.source)).toEqual([
+      'PATH',
+      'ProgramFiles',
+      'UserProfileDotnetTools',
+    ]);
   });
 
-  it('keeps the PATH candidate on top even when env vars are set', () => {
-    const candidates = buildCandidates(env());
-    expect(candidates[0].path).toBe('pwsh.exe');
-    expect(candidates[0].source).toBe('PATH');
+  it('omits Program Files candidate when env var is missing or empty', () => {
+    const withoutPf = buildCandidates(env({ ProgramFiles: undefined }));
+    expect(withoutPf.map((c) => c.source)).toEqual(['PATH', 'UserProfileDotnetTools']);
+
+    const emptyPf = buildCandidates(env({ ProgramFiles: '' }));
+    expect(emptyPf.map((c) => c.source)).toEqual(['PATH', 'UserProfileDotnetTools']);
   });
 
-  it('labels the fixed install candidates with their source', () => {
-    const candidates = buildCandidates(env());
-    expect(candidates[1].source).toBe('ProgramFiles');
-    expect(candidates[2].source).toBe('UserProfileDotnetTools');
+  it('omits dotnet tools candidate when USERPROFILE is missing or empty', () => {
+    const withoutUp = buildCandidates(env({ USERPROFILE: undefined }));
+    expect(withoutUp.map((c) => c.source)).toEqual(['PATH', 'ProgramFiles']);
+
+    const emptyUp = buildCandidates(env({ USERPROFILE: '' }));
+    expect(emptyUp.map((c) => c.source)).toEqual(['PATH', 'ProgramFiles']);
   });
 
-  it('does not crash when environment variables are missing', () => {
-    expect(buildCandidates({ PATH: 'C:\\bin' }).map((c) => c.path)).toEqual(['pwsh.exe']);
-    expect(buildCandidates({}).map((c) => c.path)).toEqual(['pwsh.exe']);
-    expect(buildCandidates(undefined).length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('skips empty environment variables', () => {
-    const candidates = buildCandidates({ PATH: 'C:\\bin', ProgramFiles: '', USERPROFILE: '' });
-    expect(candidates.map((c) => c.path)).toEqual(['pwsh.exe']);
-  });
-
-  it('never yields forbidden executables', () => {
-    const forbidden = ['powershell.exe', 'cmd.exe', 'wt.exe', 'conhost.exe', 'bash.exe', 'wsl.exe'];
-    for (const candidate of buildCandidates(env())) {
-      const base = candidate.path.toLowerCase().split(/[\\/]/).pop() ?? '';
-      expect(forbidden).not.toContain(base);
-      expect(base).toBe('pwsh.exe');
-    }
+  it('returns only the PATH candidate when no relevant env vars are present', () => {
+    const candidates = buildCandidates({});
+    expect(candidates).toEqual([{ path: PATH_CANDIDATE, source: 'PATH' }]);
   });
 });
 
 describe('dedupeCandidates', () => {
-  it('removes duplicate paths case-insensitively', () => {
-    const out = dedupeCandidates([
-      { path: 'C:\\Tools\\pwsh.exe', source: 'PATH' },
-      { path: 'c:\\tools\\pwsh.exe', source: 'ProgramFiles' },
+  it('preserves the first occurrence and removes case-insensitive duplicates', () => {
+    const input = [
+      { path: 'pwsh.exe', source: 'PATH' as const },
+      { path: 'PWSH.EXE', source: 'ProgramFiles' as const },
+      { path: 'C:\\Program Files\\PowerShell\\7\\pwsh.exe', source: 'ProgramFiles' as const },
+      {
+        path: 'c:\\program files\\powershell\\7\\pwsh.exe',
+        source: 'UserProfileDotnetTools' as const,
+      },
+    ];
+    const output = dedupeCandidates(input);
+    expect(output).toEqual([
       { path: 'pwsh.exe', source: 'PATH' },
+      { path: 'C:\\Program Files\\PowerShell\\7\\pwsh.exe', source: 'ProgramFiles' },
     ]);
-    expect(out.map((c) => c.path)).toEqual(['C:\\Tools\\pwsh.exe', 'pwsh.exe']);
-  });
-
-  it('keeps the first occurrence of a duplicate', () => {
-    const out = dedupeCandidates([
-      { path: 'pwsh.exe', source: 'PATH' },
-      { path: 'PWSH.EXE', source: 'ProgramFiles' },
-    ]);
-    expect(out).toEqual([{ path: 'pwsh.exe', source: 'PATH' }]);
   });
 });

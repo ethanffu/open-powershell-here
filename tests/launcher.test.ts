@@ -6,7 +6,7 @@ vi.mock('node:child_process', () => ({
   spawn: (...args: unknown[]) => spawnMock(...args),
 }));
 
-import { launchInteractive } from '../src/powershell/launcher';
+import { launchInteractive } from '../src/terminals/windows/launcher';
 
 class FakeChild extends EventEmitter {
   pid = 4242;
@@ -19,7 +19,6 @@ const PWSH = 'C:\\Program Files\\PowerShell\\7\\pwsh.exe';
 
 type SpawnCall = [string, string[], Record<string, unknown>];
 
-/** Queue spawn results: each entry is 'spawn' (success) or an error code. */
 function mockSpawns(behaviors: Array<'spawn' | 'ENOENT' | 'EACCES'>): FakeChild[] {
   const children: FakeChild[] = [];
   spawnMock.mockImplementation(() => {
@@ -130,8 +129,6 @@ describe('launchInteractive — semicolon paths are refused', () => {
       expect(outcome.code).toBe('UNKNOWN');
       expect(outcome.error.message).toMatch(/semicolon/);
     }
-    // The semicolon guard is enforced before any process creation: neither
-    // wt.exe nor pwsh.exe may be spawned for such paths.
     expect(spawnMock).not.toHaveBeenCalled();
   });
 });

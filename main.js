@@ -25,7 +25,13 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/main.ts
 var main_exports = {};
 __export(main_exports, {
-  default: () => VaultPowerShellPlugin
+  NOTICE_NOT_FOUND_LINUX: () => NOTICE_NOT_FOUND_LINUX,
+  NOTICE_NOT_FOUND_WINDOWS: () => NOTICE_NOT_FOUND_WINDOWS,
+  NOTICE_NO_VAULT_PATH: () => NOTICE_NO_VAULT_PATH,
+  NOTICE_SEMICOLON: () => NOTICE_SEMICOLON,
+  NOTICE_START_FAILED: () => NOTICE_START_FAILED,
+  NOTICE_UNSUPPORTED_PLATFORM: () => NOTICE_UNSUPPORTED_PLATFORM,
+  default: () => VaultTerminalPlugin
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian2 = require("obsidian");
@@ -47,7 +53,7 @@ function getVaultRootPath(vault) {
   return adapter.getBasePath();
 }
 function getFolderPath(vault, folder) {
-  if (folder === null || folder === void 0) {
+  if (folder === null || folder === void 0 || !(folder instanceof import_obsidian.TFolder)) {
     return null;
   }
   const adapter = getLocalAdapter(vault);
@@ -60,8 +66,35 @@ function getFolderPath(vault, folder) {
   }
   return adapter.getFullPath(normalized);
 }
+function getTargetPath(vault, target) {
+  if (target === null || target === void 0) {
+    return null;
+  }
+  if (target instanceof import_obsidian.TFolder) {
+    return getFolderPath(vault, target);
+  }
+  if (target instanceof import_obsidian.TFile) {
+    if (target.parent instanceof import_obsidian.TFolder) {
+      return getFolderPath(vault, target.parent);
+    }
+    const adapter = getLocalAdapter(vault);
+    if (adapter === null) {
+      return null;
+    }
+    const lastSlash = target.path.lastIndexOf("/");
+    if (lastSlash === -1) {
+      return adapter.getBasePath();
+    }
+    const parentDir = target.path.substring(0, lastSlash).replace(/^\/+|\/+$/g, "");
+    if (parentDir === "") {
+      return adapter.getBasePath();
+    }
+    return adapter.getFullPath(parentDir);
+  }
+  return null;
+}
 
-// src/powershell/candidates.ts
+// src/terminals/windows/candidates.ts
 var import_node_path = require("node:path");
 var PATH_CANDIDATE = "pwsh.exe";
 var PROGRAM_FILES_RELATIVE = ["PowerShell", "7", "pwsh.exe"];
@@ -70,12 +103,12 @@ function buildCandidates(env = process.env) {
   const raw = [{ path: PATH_CANDIDATE, source: "PATH" }];
   const programFiles = env.ProgramFiles;
   if (programFiles !== void 0 && programFiles !== "") {
-    raw.push({ path: (0, import_node_path.join)(programFiles, ...PROGRAM_FILES_RELATIVE), source: "ProgramFiles" });
+    raw.push({ path: import_node_path.win32.join(programFiles, ...PROGRAM_FILES_RELATIVE), source: "ProgramFiles" });
   }
   const userProfile = env.USERPROFILE;
   if (userProfile !== void 0 && userProfile !== "") {
     raw.push({
-      path: (0, import_node_path.join)(userProfile, ...DOTNET_TOOLS_RELATIVE),
+      path: import_node_path.win32.join(userProfile, ...DOTNET_TOOLS_RELATIVE),
       source: "UserProfileDotnetTools"
     });
   }
@@ -95,10 +128,10 @@ function dedupeCandidates(candidates) {
   return out;
 }
 
-// src/powershell/version-probe.ts
+// src/terminals/windows/version-probe.ts
 var import_node_child_process = require("node:child_process");
 
-// src/powershell/types.ts
+// src/terminals/windows/types.ts
 var PROBE_ARGS = [
   "-NoLogo",
   "-NoProfile",
@@ -108,7 +141,7 @@ var PROBE_ARGS = [
 ];
 var PROBE_TIMEOUT_MS = 5e3;
 
-// src/powershell/version-probe.ts
+// src/terminals/windows/version-probe.ts
 function runExecFile(file, args, options) {
   return new Promise((resolve, reject) => {
     (0, import_node_child_process.execFile)(file, args, options, (error, stdout, _stderr) => {
@@ -148,7 +181,65 @@ function parseMajorVersion(rawOutput) {
   return major >= 7 ? major : null;
 }
 
-// src/powershell/launcher.ts
+// src/terminals/windows/finder.ts
+var PowerShellFinder = class {
+  constructor(deps) {
+    this.verified = null;
+    this.resolving = null;
+    var _a, _b, _c;
+    this.deps = {
+      buildCandidates: (_a = deps == null ? void 0 : deps.buildCandidates) != null ? _a : buildCandidates,
+      probeMajorVersion: (_b = deps == null ? void 0 : deps.probeMajorVersion) != null ? _b : probeMajorVersion,
+      env: deps == null ? void 0 : deps.env,
+      debug: (_c = deps == null ? void 0 : deps.debug) != null ? _c : ((msg) => console.debug(`[Open Terminal Here] ${msg}`))
+    };
+  }
+  get cached() {
+    if (this.verified === null) {
+      return null;
+    }
+    return {
+      id: "powershell",
+      displayName: "PowerShell",
+      binaryPath: this.verified.path,
+      extra: { majorVersion: this.verified.majorVersion }
+    };
+  }
+  get verifiedPowerShell() {
+    return this.verified;
+  }
+  resolve() {
+    if (this.verified !== null) {
+      return Promise.resolve(this.cached);
+    }
+    if (this.resolving !== null) {
+      return this.resolving;
+    }
+    this.resolving = this.findBest().finally(() => {
+      this.resolving = null;
+    });
+    return this.resolving;
+  }
+  invalidate() {
+    this.verified = null;
+  }
+  async findBest() {
+    var _a, _b, _c, _d;
+    const candidates = this.deps.buildCandidates(this.deps.env);
+    for (const candidate of candidates) {
+      const major = await this.deps.probeMajorVersion(candidate.path);
+      if (major !== null) {
+        this.verified = { path: candidate.path, majorVersion: major };
+        (_b = (_a = this.deps).debug) == null ? void 0 : _b.call(_a, `verified pwsh: ${candidate.path} (major ${major})`);
+        return this.cached;
+      }
+      (_d = (_c = this.deps).debug) == null ? void 0 : _d.call(_c, `rejected candidate ${candidate.source}: ${candidate.path}`);
+    }
+    return null;
+  }
+};
+
+// src/terminals/windows/launcher.ts
 var import_node_child_process2 = require("node:child_process");
 var WINDOWS_TERMINAL = "wt.exe";
 function spawnDirect(verified, targetDir) {
@@ -228,102 +319,387 @@ function launchInteractive(verified, targetDir) {
   });
 }
 
-// src/powershell/finder.ts
-var PowerShellFinder = class {
-  constructor(deps) {
-    this.deps = deps;
-    this.verified = null;
-    this.resolving = null;
+// src/terminals/linux/finder.ts
+var import_promises = require("node:fs/promises");
+var import_node_fs = require("node:fs");
+var import_node_path2 = require("node:path");
+
+// src/terminals/linux/candidates.ts
+var LINUX_TERMINALS = [
+  {
+    id: "ghostty",
+    displayName: "Ghostty",
+    binary: "ghostty",
+    buildArgs: (dir) => [`--working-directory=${dir}`]
+  },
+  {
+    id: "alacritty",
+    displayName: "Alacritty",
+    binary: "alacritty",
+    buildArgs: (dir) => ["--working-directory", dir]
+  },
+  {
+    id: "kitty",
+    displayName: "Kitty",
+    binary: "kitty",
+    buildArgs: (dir) => ["--directory", dir]
+  },
+  {
+    id: "wezterm",
+    displayName: "WezTerm",
+    binary: "wezterm",
+    buildArgs: (dir) => ["start", "--cwd", dir]
+  },
+  {
+    id: "konsole",
+    displayName: "Konsole",
+    binary: "konsole",
+    buildArgs: (dir) => ["--workdir", dir]
+  },
+  {
+    id: "gnome-terminal",
+    displayName: "GNOME Terminal",
+    binary: "gnome-terminal",
+    buildArgs: (dir) => [`--working-directory=${dir}`]
+  },
+  {
+    id: "xfce4-terminal",
+    displayName: "XFCE4 Terminal",
+    binary: "xfce4-terminal",
+    buildArgs: (dir) => [`--working-directory=${dir}`]
+  },
+  {
+    id: "foot",
+    displayName: "Foot",
+    binary: "foot",
+    buildArgs: (dir) => ["-D", dir]
+  },
+  {
+    id: "x-terminal-emulator",
+    displayName: "Terminal",
+    binary: "x-terminal-emulator",
+    buildArgs: () => []
   }
-  /** The currently cached result, if any. */
+];
+
+// src/terminals/linux/finder.ts
+async function defaultCheckExecutable(filePath) {
+  try {
+    await (0, import_promises.access)(filePath, import_node_fs.constants.X_OK);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+var LinuxTerminalFinder = class {
+  constructor(deps) {
+    this.verified = null;
+    this.currentPreferredId = null;
+    this.resolving = null;
+    var _a, _b, _c;
+    this.deps = {
+      specs: (_a = deps == null ? void 0 : deps.specs) != null ? _a : LINUX_TERMINALS,
+      checkExecutable: (_b = deps == null ? void 0 : deps.checkExecutable) != null ? _b : defaultCheckExecutable,
+      env: deps == null ? void 0 : deps.env,
+      debug: (_c = deps == null ? void 0 : deps.debug) != null ? _c : ((msg) => console.debug(`[Open Terminal Here] ${msg}`))
+    };
+  }
   get cached() {
     return this.verified;
   }
-  /** Resolve once; concurrent callers share the same in-flight probe chain. */
-  resolve() {
+  setPreferredTerminal(id) {
+    if (this.currentPreferredId !== id) {
+      this.currentPreferredId = id;
+      this.invalidate();
+    }
+  }
+  resolve(preferredId) {
+    const targetPreferred = preferredId != null ? preferredId : this.currentPreferredId;
+    if (targetPreferred !== this.currentPreferredId) {
+      this.currentPreferredId = targetPreferred;
+      this.invalidate();
+    }
     if (this.verified !== null) {
       return Promise.resolve(this.verified);
     }
     if (this.resolving !== null) {
       return this.resolving;
     }
-    this.resolving = this.findBest().finally(() => {
+    this.resolving = this.findBest(this.currentPreferredId).finally(() => {
       this.resolving = null;
     });
     return this.resolving;
   }
-  /** Drop the cached result (e.g. the cached executable is gone). */
   invalidate() {
     this.verified = null;
   }
-  async findBest() {
-    var _a, _b, _c, _d;
-    const candidates = this.deps.buildCandidates(this.deps.env);
-    for (const candidate of candidates) {
-      const major = await this.deps.probeMajorVersion(candidate.path);
-      if (major !== null) {
-        this.verified = { path: candidate.path, majorVersion: major };
-        (_b = (_a = this.deps).debug) == null ? void 0 : _b.call(_a, `verified pwsh: ${candidate.path} (major ${major})`);
-        return this.verified;
+  async listInstalledTerminals() {
+    var _a, _b;
+    const pathEnv = (_b = ((_a = this.deps.env) != null ? _a : process.env).PATH) != null ? _b : "";
+    const dirs = pathEnv.split(":").filter(Boolean);
+    const installed = [];
+    for (const spec of this.deps.specs) {
+      for (const dir of dirs) {
+        const fullPath = (0, import_node_path2.join)(dir, spec.binary);
+        const isExecutable = await this.deps.checkExecutable(fullPath);
+        if (isExecutable) {
+          installed.push({ spec, binaryPath: fullPath });
+          break;
+        }
       }
-      (_d = (_c = this.deps).debug) == null ? void 0 : _d.call(_c, `rejected candidate ${candidate.source}: ${candidate.path}`);
+    }
+    return installed;
+  }
+  async findBest(preferredId) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+    const pathEnv = (_b = ((_a = this.deps.env) != null ? _a : process.env).PATH) != null ? _b : "";
+    const dirs = pathEnv.split(":").filter(Boolean);
+    if (preferredId !== null && preferredId !== void 0 && preferredId !== "auto" && preferredId !== "") {
+      const normalizedPreferred = preferredId.toLowerCase().replace(/^terminal-choice-/, "");
+      const match = this.deps.specs.find(
+        (s) => s.id.toLowerCase() === normalizedPreferred || s.binary.toLowerCase() === normalizedPreferred
+      );
+      if (match !== void 0) {
+        for (const dir of dirs) {
+          const fullPath = (0, import_node_path2.join)(dir, match.binary);
+          const isExecutable = await this.deps.checkExecutable(fullPath);
+          if (isExecutable) {
+            this.verified = {
+              id: match.id,
+              displayName: match.displayName,
+              binaryPath: fullPath,
+              extra: { spec: match }
+            };
+            (_d = (_c = this.deps).debug) == null ? void 0 : _d.call(_c, `found preferred terminal: ${match.displayName} at ${fullPath}`);
+            return this.verified;
+          }
+        }
+        (_f = (_e = this.deps).debug) == null ? void 0 : _f.call(_e, `preferred terminal ${match.displayName} not found on system`);
+      }
+    }
+    for (const spec of this.deps.specs) {
+      for (const dir of dirs) {
+        const fullPath = (0, import_node_path2.join)(dir, spec.binary);
+        const isExecutable = await this.deps.checkExecutable(fullPath);
+        if (isExecutable) {
+          this.verified = {
+            id: spec.id,
+            displayName: spec.displayName,
+            binaryPath: fullPath,
+            extra: { spec }
+          };
+          (_h = (_g = this.deps).debug) == null ? void 0 : _h.call(_g, `found terminal: ${spec.displayName} at ${fullPath}`);
+          return this.verified;
+        }
+      }
+      (_j = (_i = this.deps).debug) == null ? void 0 : _j.call(_i, `rejected terminal ${spec.displayName} (${spec.binary})`);
     }
     return null;
   }
 };
 
+// src/terminals/linux/launcher.ts
+var import_node_child_process3 = require("node:child_process");
+function launchLinuxTerminal(terminal, targetDir) {
+  var _a;
+  const spec = (_a = terminal.extra) == null ? void 0 : _a.spec;
+  const args = spec !== void 0 ? spec.buildArgs(targetDir) : [`--working-directory=${targetDir}`];
+  return new Promise((resolve) => {
+    let settled = false;
+    let child;
+    try {
+      child = (0, import_node_child_process3.spawn)(terminal.binaryPath, args, {
+        cwd: targetDir,
+        env: process.env,
+        shell: false,
+        detached: true,
+        stdio: "ignore"
+      });
+    } catch (error) {
+      resolve({ ok: false, code: "UNKNOWN", error });
+      return;
+    }
+    child.once("error", (error) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      const code = error.code;
+      resolve({
+        ok: false,
+        code: code === "ENOENT" ? "ENOENT" : "UNKNOWN",
+        error
+      });
+    });
+    child.once("spawn", () => {
+      var _a2;
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve({ ok: true, pid: (_a2 = child.pid) != null ? _a2 : 0 });
+    });
+    child.unref();
+  });
+}
+
+// src/terminals/manager.ts
+var TerminalManager = class {
+  constructor(deps) {
+    this.explicitPreferredTerminal = null;
+    var _a;
+    this.platform = (_a = deps == null ? void 0 : deps.platform) != null ? _a : process.platform;
+    if ((deps == null ? void 0 : deps.finder) !== void 0) {
+      this.finder = deps.finder;
+    } else if (this.platform === "win32") {
+      this.finder = new PowerShellFinder();
+    } else if (this.platform === "linux") {
+      this.finder = new LinuxTerminalFinder();
+    } else {
+      this.finder = null;
+    }
+    if ((deps == null ? void 0 : deps.launch) !== void 0) {
+      this.launcher = deps.launch;
+    } else if (this.platform === "win32") {
+      this.launcher = (term, dir) => {
+        var _a2, _b;
+        const verified = {
+          path: term.binaryPath,
+          majorVersion: (_b = (_a2 = term.extra) == null ? void 0 : _a2.majorVersion) != null ? _b : 7
+        };
+        return launchInteractive(verified, dir);
+      };
+    } else if (this.platform === "linux") {
+      this.launcher = (term, dir) => launchLinuxTerminal(term, dir);
+    } else {
+      this.launcher = null;
+    }
+  }
+  isPlatformSupported() {
+    return this.platform === "win32" || this.platform === "linux";
+  }
+  getMenuTitle() {
+    return "Open Terminal here";
+  }
+  getRibbonTooltip() {
+    return "Open Terminal at vault root";
+  }
+  setPreferredTerminal(id) {
+    this.explicitPreferredTerminal = id;
+    if (this.finder instanceof LinuxTerminalFinder) {
+      this.finder.setPreferredTerminal(id);
+    }
+  }
+  detectPreferredTerminalFromDom() {
+    if (this.explicitPreferredTerminal !== null) {
+      return this.explicitPreferredTerminal;
+    }
+    if (typeof document === "undefined") {
+      return null;
+    }
+    const classList = document.body.classList;
+    for (const cls of Array.from(classList)) {
+      if (cls.startsWith("terminal-choice-") && cls !== "terminal-choice-auto") {
+        return cls.replace("terminal-choice-", "");
+      }
+    }
+    return null;
+  }
+  async launch(targetDir, preferredTerminal) {
+    if (!this.isPlatformSupported() || this.finder === null || this.launcher === null) {
+      return { kind: "unsupported_platform", platform: this.platform };
+    }
+    if (targetDir === null) {
+      return { kind: "no_target_path" };
+    }
+    if (this.platform === "win32" && targetDir.includes(";")) {
+      return { kind: "semicolon_in_path" };
+    }
+    const preferred = preferredTerminal != null ? preferredTerminal : this.detectPreferredTerminalFromDom();
+    if (this.finder instanceof LinuxTerminalFinder) {
+      this.finder.setPreferredTerminal(preferred);
+    }
+    const verified = await this.finder.resolve();
+    if (verified === null) {
+      return { kind: "not_found", platform: this.platform };
+    }
+    const outcome = await this.launcher(verified, targetDir);
+    if (outcome.ok) {
+      return { kind: "success" };
+    }
+    if (outcome.code === "ENOENT") {
+      this.finder.invalidate();
+      const reVerified = await this.finder.resolve();
+      if (reVerified === null) {
+        return { kind: "not_found", platform: this.platform };
+      }
+      const retry = await this.launcher(reVerified, targetDir);
+      if (retry.ok) {
+        return { kind: "success" };
+      }
+      return { kind: "failed", error: retry.error };
+    }
+    return { kind: "failed", error: outcome.error };
+  }
+};
+
 // src/main.ts
 var RIBBON_ICON = "terminal";
-var RIBBON_TOOLTIP = "Open PowerShell at vault root";
-var HIDE_RIBBON_BODY_CLASS = "hide-vault-powershell-ribbon";
-var MENU_ITEM_TITLE = "Open PowerShell here";
+var HIDE_RIBBON_BODY_CLASSES = [
+  "hide-vault-terminal-ribbon",
+  "hide-vault-powershell-ribbon"
+];
 var MENU_ITEM_ICON = "terminal";
-var NOTICE_NOT_WINDOWS = "Open PowerShell Here only supports Obsidian Desktop on Windows.";
+var NOTICE_UNSUPPORTED_PLATFORM = "Open Terminal Here currently supports Windows and Linux.";
 var NOTICE_NO_VAULT_PATH = "Unable to resolve the local vault path.";
-var NOTICE_NOT_FOUND = "PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.";
-var NOTICE_START_FAILED = "PowerShell could not be started. Check the developer console for details.";
+var NOTICE_NOT_FOUND_WINDOWS = "PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.";
+var NOTICE_NOT_FOUND_LINUX = "No supported terminal emulator was found. Install Ghostty (recommended) or another supported terminal.";
+var NOTICE_START_FAILED = "Terminal could not be started. Check the developer console for details.";
 var NOTICE_SEMICOLON = "PowerShell cannot be opened for paths containing a semicolon (;).";
-var VaultPowerShellPlugin = class extends import_obsidian2.Plugin {
+var VaultTerminalPlugin = class extends import_obsidian2.Plugin {
   constructor(app, manifest, deps) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b;
     super(app, manifest);
     this.ribbonEl = null;
     this.ribbonObserver = null;
     /**
-     * Single-folder context-menu handler (Obsidian's public `file-menu`
-     * event). Shows the item only for exactly one `TFolder` on Windows with a
-     * local file system adapter. The target path is resolved when the item is
-     * clicked, not when the menu is built.
+     * Context-menu handler for folders and files.
+     * - Shows for a single TFolder (opens that folder).
+     * - Shows for a single TFile (opens that file's parent folder).
      */
     this.onFileMenu = (menu, file) => {
-      if (this.platform !== "win32") {
+      if (!this.terminalManager.isPlatformSupported()) {
         return;
       }
-      if (!(file instanceof import_obsidian2.TFolder)) {
+      if (!(file instanceof import_obsidian2.TFolder || file instanceof import_obsidian2.TFile)) {
         return;
       }
       if (!(this.app.vault.adapter instanceof import_obsidian2.FileSystemAdapter)) {
         return;
       }
-      const folder = file;
+      const title = this.terminalManager.getMenuTitle();
       menu.addItem((item) => {
-        item.setTitle(MENU_ITEM_TITLE).setIcon(MENU_ITEM_ICON).onClick(() => {
-          void this.openPowerShell(getFolderPath(this.app.vault, folder));
+        item.setTitle(title).setIcon(MENU_ITEM_ICON).onClick(() => {
+          void this.openTerminal(getTargetPath(this.app.vault, file));
         });
       });
     };
-    this.platform = (_a = deps == null ? void 0 : deps.platform) != null ? _a : process.platform;
-    this.finder = new PowerShellFinder({
-      buildCandidates: (_c = (_b = deps == null ? void 0 : deps.finder) == null ? void 0 : _b.buildCandidates) != null ? _c : buildCandidates,
-      probeMajorVersion: (_e = (_d = deps == null ? void 0 : deps.finder) == null ? void 0 : _d.probeMajorVersion) != null ? _e : probeMajorVersion,
-      env: (_f = deps == null ? void 0 : deps.finder) == null ? void 0 : _f.env,
-      debug: (_h = (_g = deps == null ? void 0 : deps.finder) == null ? void 0 : _g.debug) != null ? _h : ((message) => console.debug(`[Open PowerShell Here] ${message}`))
-    });
+    if ((deps == null ? void 0 : deps.terminalManager) !== void 0) {
+      this.terminalManager = deps.terminalManager;
+    } else {
+      const platform = (_b = deps == null ? void 0 : deps.platform) != null ? _b : (_a = deps == null ? void 0 : deps.managerDeps) == null ? void 0 : _a.platform;
+      this.terminalManager = new TerminalManager({
+        platform,
+        ...deps == null ? void 0 : deps.managerDeps
+      });
+    }
   }
   onload() {
-    const ribbonEl = this.addRibbonIcon(RIBBON_ICON, RIBBON_TOOLTIP, () => {
-      void this.openPowerShell(getVaultRootPath(this.app.vault));
+    const tooltip = this.terminalManager.getRibbonTooltip();
+    const ribbonEl = this.addRibbonIcon(RIBBON_ICON, tooltip, () => {
+      void this.openTerminal(getVaultRootPath(this.app.vault));
     });
+    ribbonEl.addClass("vault-terminal-ribbon");
     ribbonEl.addClass("vault-powershell-ribbon");
     this.ribbonEl = ribbonEl;
     this.setupRibbonVisibilityEnforcement();
@@ -337,13 +713,7 @@ var VaultPowerShellPlugin = class extends import_obsidian2.Plugin {
     super.onunload();
   }
   /**
-   * Enforce the Style Settings hide toggle in JS, on top of the styles.css
-   * rule: when `HIDE_RIBBON_BODY_CLASS` is present on <body>, hide the
-   * ribbon element via inline style. This makes the toggle work regardless
-   * of theme CSS or future ribbon DOM changes (the CSS rule alone failed in
-   * the user's environment until the body-class mismatch was fixed).
-   *
-   * Skipped outside a DOM environment (automated tests).
+   * Enforce the Style Settings hide toggle in JS via MutationObserver.
    */
   setupRibbonVisibilityEnforcement() {
     if (typeof document === "undefined" || typeof MutationObserver === "undefined") {
@@ -353,9 +723,10 @@ var VaultPowerShellPlugin = class extends import_obsidian2.Plugin {
       if (this.ribbonEl === null) {
         return;
       }
-      this.ribbonEl.style.display = document.body.classList.contains(
-        HIDE_RIBBON_BODY_CLASS
-      ) ? "none" : "";
+      const shouldHide = HIDE_RIBBON_BODY_CLASSES.some(
+        (cls) => document.body.classList.contains(cls)
+      );
+      this.ribbonEl.style.display = shouldHide ? "none" : "";
     };
     this.ribbonObserver = new MutationObserver(apply);
     this.ribbonObserver.observe(document.body, {
@@ -365,57 +736,40 @@ var VaultPowerShellPlugin = class extends import_obsidian2.Plugin {
     apply();
   }
   /**
-   * Shared launch flow for both entry points (ribbon and folder context
-   * menu): platform check -> semicolon guard -> target path -> find/verify
-   * pwsh -> launch. On `ENOENT` at launch time the cache is cleared and a
-   * single retry is performed (never more than once per click, never
-   * recursive).
-   *
-   * `targetDir` is the directory PowerShell should open: the vault root for
-   * the ribbon, the right-clicked folder's absolute path for the menu.
+   * Open the native terminal at the given target directory.
    */
-  async openPowerShell(targetDir) {
-    if (this.platform !== "win32") {
-      new import_obsidian2.Notice(NOTICE_NOT_WINDOWS);
-      return;
-    }
-    if (targetDir === null) {
-      new import_obsidian2.Notice(NOTICE_NO_VAULT_PATH);
-      return;
-    }
-    if (targetDir.includes(";")) {
-      new import_obsidian2.Notice(NOTICE_SEMICOLON);
-      return;
-    }
-    const verified = await this.finder.resolve();
-    if (verified === null) {
-      new import_obsidian2.Notice(NOTICE_NOT_FOUND);
-      return;
-    }
-    const outcome = await launchInteractive(verified, targetDir);
-    if (outcome.ok) {
-      return;
-    }
-    if (outcome.code === "ENOENT") {
-      this.finder.invalidate();
-      const reVerified = await this.finder.resolve();
-      if (reVerified === null) {
-        new import_obsidian2.Notice(NOTICE_NOT_FOUND);
+  async openTerminal(targetDir) {
+    const result = await this.terminalManager.launch(targetDir);
+    switch (result.kind) {
+      case "success":
         return;
-      }
-      const retry = await launchInteractive(reVerified, targetDir);
-      if (retry.ok) {
+      case "unsupported_platform":
+        new import_obsidian2.Notice(NOTICE_UNSUPPORTED_PLATFORM);
         return;
-      }
-      console.error(
-        "[Open PowerShell Here] launch failed on retry",
-        retry.code,
-        retry.error
-      );
-      new import_obsidian2.Notice(NOTICE_START_FAILED);
-      return;
+      case "no_target_path":
+        new import_obsidian2.Notice(NOTICE_NO_VAULT_PATH);
+        return;
+      case "semicolon_in_path":
+        new import_obsidian2.Notice(NOTICE_SEMICOLON);
+        return;
+      case "not_found":
+        new import_obsidian2.Notice(
+          result.platform === "win32" ? NOTICE_NOT_FOUND_WINDOWS : NOTICE_NOT_FOUND_LINUX
+        );
+        return;
+      case "failed":
+        console.error("[Open Terminal Here] launch failed", result.error);
+        new import_obsidian2.Notice(NOTICE_START_FAILED);
+        return;
     }
-    console.error("[Open PowerShell Here] launch failed", outcome.code, outcome.error);
-    new import_obsidian2.Notice(NOTICE_START_FAILED);
   }
 };
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  NOTICE_NOT_FOUND_LINUX,
+  NOTICE_NOT_FOUND_WINDOWS,
+  NOTICE_NO_VAULT_PATH,
+  NOTICE_SEMICOLON,
+  NOTICE_START_FAILED,
+  NOTICE_UNSUPPORTED_PLATFORM
+});

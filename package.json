@@ -1,7 +1,7 @@
 {
-  "name": "open-powershell-here",
-  "version": "0.4.1",
-  "description": "Open PowerShell 7+ at the root or any folder of the current Obsidian vault.",
+  "name": "open-terminal-here",
+  "version": "0.5.0",
+  "description": "Open a native terminal (PowerShell on Windows, Ghostty / other terminals on Linux) at the root or any folder/file of the current Obsidian vault.",
   "private": true,
   "license": "MIT",
   "main": "main.js",

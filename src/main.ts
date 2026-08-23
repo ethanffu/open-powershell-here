@@ -2,83 +2,77 @@ import {
   FileSystemAdapter,
   Notice,
   Plugin,
+  TFile,
   TFolder,
   type App,
   type Menu,
   type PluginManifest,
   type TAbstractFile,
 } from 'obsidian';
-import { getFolderPath, getVaultRootPath } from './vault-path';
-import { buildCandidates } from './powershell/candidates';
-import { probeMajorVersion } from './powershell/version-probe';
-import { launchInteractive } from './powershell/launcher';
-import { PowerShellFinder, type FinderDeps } from './powershell/finder';
+import { getTargetPath, getVaultRootPath } from './vault-path';
+import { TerminalManager, type TerminalManagerDeps } from './terminals/manager';
 
 const RIBBON_ICON = 'terminal';
-const RIBBON_TOOLTIP = 'Open PowerShell at vault root';
 
 /**
- * Body class applied by Style Settings when its "Hide the ribbon button"
- * class-toggle is ON. IMPORTANT: Style Settings uses the SETTING ID as the
- * body class for class-toggle settings (addClass is ignored) — see
- * styles.css, whose selectors must stay in sync with this constant.
+ * Body classes applied by Style Settings when "Hide the ribbon button"
+ * is ON.
  */
-const HIDE_RIBBON_BODY_CLASS = 'hide-vault-powershell-ribbon';
+const HIDE_RIBBON_BODY_CLASSES = [
+  'hide-vault-terminal-ribbon',
+  'hide-vault-powershell-ribbon',
+];
 
-const MENU_ITEM_TITLE = 'Open PowerShell here';
 const MENU_ITEM_ICON = 'terminal';
 
-const NOTICE_NOT_WINDOWS = 'Open PowerShell Here only supports Obsidian Desktop on Windows.';
-const NOTICE_NO_VAULT_PATH = 'Unable to resolve the local vault path.';
-const NOTICE_NOT_FOUND =
+export const NOTICE_UNSUPPORTED_PLATFORM =
+  'Open Terminal Here currently supports Windows and Linux.';
+export const NOTICE_NO_VAULT_PATH = 'Unable to resolve the local vault path.';
+export const NOTICE_NOT_FOUND_WINDOWS =
   'PowerShell 7 or later was not found. Install PowerShell and restart Obsidian.';
-const NOTICE_START_FAILED =
-  'PowerShell could not be started. Check the developer console for details.';
-const NOTICE_SEMICOLON =
+export const NOTICE_NOT_FOUND_LINUX =
+  'No supported terminal emulator was found. Install Ghostty (recommended) or another supported terminal.';
+export const NOTICE_START_FAILED =
+  'Terminal could not be started. Check the developer console for details.';
+export const NOTICE_SEMICOLON =
   'PowerShell cannot be opened for paths containing a semicolon (;).';
 
-/** Test seam: injected dependencies (platform, finder internals). */
+/** Test seam: injected dependencies (platform, terminal manager). */
 export interface PluginDeps {
-  readonly finder: FinderDeps;
-  readonly platform: NodeJS.Platform;
+  readonly platform?: NodeJS.Platform;
+  readonly terminalManager?: TerminalManager;
+  readonly managerDeps?: Partial<TerminalManagerDeps>;
 }
 
-export default class VaultPowerShellPlugin extends Plugin {
-  private readonly finder: PowerShellFinder;
-  private readonly platform: NodeJS.Platform;
+export default class VaultTerminalPlugin extends Plugin {
+  readonly terminalManager: TerminalManager;
   private ribbonEl: HTMLElement | null = null;
   private ribbonObserver: MutationObserver | null = null;
 
   constructor(app: App, manifest: PluginManifest, deps?: Partial<PluginDeps>) {
     super(app, manifest);
-    this.platform = deps?.platform ?? process.platform;
-    this.finder = new PowerShellFinder({
-      buildCandidates: deps?.finder?.buildCandidates ?? buildCandidates,
-      probeMajorVersion: deps?.finder?.probeMajorVersion ?? probeMajorVersion,
-      env: deps?.finder?.env,
-      debug: deps?.finder?.debug ?? ((message) => console.debug(`[Open PowerShell Here] ${message}`)),
-    });
+    if (deps?.terminalManager !== undefined) {
+      this.terminalManager = deps.terminalManager;
+    } else {
+      const platform = deps?.platform ?? deps?.managerDeps?.platform;
+      this.terminalManager = new TerminalManager({
+        platform,
+        ...deps?.managerDeps,
+      });
+    }
   }
 
   onload(): void {
-    // Entry points (exactly two, per user-approved constraint change):
-    //   1. the ribbon button -> vault root (hideable via Style Settings,
-    //      never removed);
-    //   2. the single-folder context-menu item -> that folder.
-    // No commands, no settings, no keybindings, no batch (files-menu) entry,
-    // no per-file menu entry.
-    const ribbonEl = this.addRibbonIcon(RIBBON_ICON, RIBBON_TOOLTIP, () => {
-      void this.openPowerShell(getVaultRootPath(this.app.vault));
+    const tooltip = this.terminalManager.getRibbonTooltip();
+    const ribbonEl = this.addRibbonIcon(RIBBON_ICON, tooltip, () => {
+      void this.openTerminal(getVaultRootPath(this.app.vault));
     });
-    // Stable class for styles.css (Style Settings "Hide the ribbon button"
-    // toggle) — independent of the icon name, so the CSS survives icon
-    // changes.
+
+    ribbonEl.addClass('vault-terminal-ribbon');
     ribbonEl.addClass('vault-powershell-ribbon');
     this.ribbonEl = ribbonEl;
     this.setupRibbonVisibilityEnforcement();
 
-    // Lifecycle is managed through `registerEvent`: Obsidian unregisters the
-    // handler on disable/reload, so reloads never leave duplicate handlers.
     this.registerEvent(this.app.workspace.on('file-menu', this.onFileMenu));
   }
 
@@ -90,13 +84,7 @@ export default class VaultPowerShellPlugin extends Plugin {
   }
 
   /**
-   * Enforce the Style Settings hide toggle in JS, on top of the styles.css
-   * rule: when `HIDE_RIBBON_BODY_CLASS` is present on <body>, hide the
-   * ribbon element via inline style. This makes the toggle work regardless
-   * of theme CSS or future ribbon DOM changes (the CSS rule alone failed in
-   * the user's environment until the body-class mismatch was fixed).
-   *
-   * Skipped outside a DOM environment (automated tests).
+   * Enforce the Style Settings hide toggle in JS via MutationObserver.
    */
   private setupRibbonVisibilityEnforcement(): void {
     if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') {
@@ -106,11 +94,10 @@ export default class VaultPowerShellPlugin extends Plugin {
       if (this.ribbonEl === null) {
         return;
       }
-      this.ribbonEl.style.display = document.body.classList.contains(
-        HIDE_RIBBON_BODY_CLASS,
-      )
-        ? 'none'
-        : '';
+      const shouldHide = HIDE_RIBBON_BODY_CLASSES.some((cls) =>
+        document.body.classList.contains(cls),
+      );
+      this.ribbonEl.style.display = shouldHide ? 'none' : '';
     };
     this.ribbonObserver = new MutationObserver(apply);
     this.ribbonObserver.observe(document.body, {
@@ -121,95 +108,61 @@ export default class VaultPowerShellPlugin extends Plugin {
   }
 
   /**
-   * Single-folder context-menu handler (Obsidian's public `file-menu`
-   * event). Shows the item only for exactly one `TFolder` on Windows with a
-   * local file system adapter. The target path is resolved when the item is
-   * clicked, not when the menu is built.
+   * Context-menu handler for folders and files.
+   * - Shows for a single TFolder (opens that folder).
+   * - Shows for a single TFile (opens that file's parent folder).
    */
   private readonly onFileMenu = (menu: Menu, file: TAbstractFile): void => {
-    if (this.platform !== 'win32') {
+    if (!this.terminalManager.isPlatformSupported()) {
       return;
     }
-    if (!(file instanceof TFolder)) {
-      return; // plain files and anything else get no item.
+    if (!(file instanceof TFolder || file instanceof TFile)) {
+      return;
     }
     if (!(this.app.vault.adapter instanceof FileSystemAdapter)) {
-      return; // non-local adapters (e.g. remote vaults) get no item.
+      return;
     }
-    const folder = file;
+
+    const title = this.terminalManager.getMenuTitle();
     menu.addItem((item) => {
       item
-        .setTitle(MENU_ITEM_TITLE)
+        .setTitle(title)
         .setIcon(MENU_ITEM_ICON)
         .onClick(() => {
-          void this.openPowerShell(getFolderPath(this.app.vault, folder));
+          void this.openTerminal(getTargetPath(this.app.vault, file));
         });
     });
   };
 
   /**
-   * Shared launch flow for both entry points (ribbon and folder context
-   * menu): platform check -> semicolon guard -> target path -> find/verify
-   * pwsh -> launch. On `ENOENT` at launch time the cache is cleared and a
-   * single retry is performed (never more than once per click, never
-   * recursive).
-   *
-   * `targetDir` is the directory PowerShell should open: the vault root for
-   * the ribbon, the right-clicked folder's absolute path for the menu.
+   * Open the native terminal at the given target directory.
    */
-  async openPowerShell(targetDir: string | null): Promise<void> {
-    if (this.platform !== 'win32') {
-      new Notice(NOTICE_NOT_WINDOWS);
-      return;
-    }
+  async openTerminal(targetDir: string | null): Promise<void> {
+    const result = await this.terminalManager.launch(targetDir);
 
-    if (targetDir === null) {
-      new Notice(NOTICE_NO_VAULT_PATH);
-      return;
-    }
-
-    // Semicolon guard (user-approved, 2026-08-09): wt.exe splits its
-    // command line on ';', so a path containing one cannot be launched
-    // reliably. No process is created at all — not even the version probe.
-    if (targetDir.includes(';')) {
-      new Notice(NOTICE_SEMICOLON);
-      return;
-    }
-
-    const verified = await this.finder.resolve();
-    if (verified === null) {
-      new Notice(NOTICE_NOT_FOUND);
-      return;
-    }
-
-    const outcome = await launchInteractive(verified, targetDir);
-    if (outcome.ok) {
-      return; // Success: no notice, per spec.
-    }
-
-    if (outcome.code === 'ENOENT') {
-      // The cached executable is gone (e.g. it was uninstalled): clear the
-      // cache, re-find once, and retry exactly once.
-      this.finder.invalidate();
-      const reVerified = await this.finder.resolve();
-      if (reVerified === null) {
-        new Notice(NOTICE_NOT_FOUND);
+    switch (result.kind) {
+      case 'success':
         return;
-      }
-      const retry = await launchInteractive(reVerified, targetDir);
-      if (retry.ok) {
+      case 'unsupported_platform':
+        new Notice(NOTICE_UNSUPPORTED_PLATFORM);
         return;
-      }
-      console.error(
-        '[Open PowerShell Here] launch failed on retry',
-        retry.code,
-        retry.error,
-      );
-      new Notice(NOTICE_START_FAILED);
-      return;
+      case 'no_target_path':
+        new Notice(NOTICE_NO_VAULT_PATH);
+        return;
+      case 'semicolon_in_path':
+        new Notice(NOTICE_SEMICOLON);
+        return;
+      case 'not_found':
+        new Notice(
+          result.platform === 'win32'
+            ? NOTICE_NOT_FOUND_WINDOWS
+            : NOTICE_NOT_FOUND_LINUX,
+        );
+        return;
+      case 'failed':
+        console.error('[Open Terminal Here] launch failed', result.error);
+        new Notice(NOTICE_START_FAILED);
+        return;
     }
-
-    console.error('[Open PowerShell Here] launch failed', outcome.code, outcome.error);
-    new Notice(NOTICE_START_FAILED);
   }
 }

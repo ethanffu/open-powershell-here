@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FileSystemAdapter, TFolder } from '../tests/mocks/obsidian';
-import { getFolderPath, getVaultRootPath } from '../src/vault-path';
+import { FileSystemAdapter, TFile, TFolder } from './mocks/obsidian';
+import { getFolderPath, getTargetPath, getVaultRootPath } from '../src/vault-path';
 
 interface FakeVault {
   adapter: unknown;
@@ -52,7 +52,6 @@ describe('getFolderPath', () => {
   it('returns the base path for the vault root folder (empty path)', () => {
     const adapter = new FileSystemAdapter(VAULT);
     expect(getFolderPath({ adapter } as never, new TFolder('') as never)).toBe(VAULT);
-    // A defensively trimmed slash-only path is also the vault root.
     expect(getFolderPath({ adapter } as never, new TFolder('/') as never)).toBe(VAULT);
   });
 
@@ -70,5 +69,47 @@ describe('getFolderPath', () => {
     expect(getFolderPath(null as never, new TFolder('Notes') as never)).toBeNull();
     expect(getFolderPath({ adapter } as never, null as never)).toBeNull();
     expect(getFolderPath(undefined as never, undefined as never)).toBeNull();
+  });
+});
+
+describe('getTargetPath', () => {
+  const VAULT = 'E:\\My Vault';
+
+  it('resolves the directory of a TFolder directly', () => {
+    const adapter = new FileSystemAdapter(VAULT);
+    const folder = new TFolder('Work/Projects');
+    expect(getTargetPath({ adapter } as never, folder as never)).toBe(
+      'E:\\My Vault\\Work\\Projects',
+    );
+  });
+
+  it('resolves the parent folder path for a TFile with parent', () => {
+    const adapter = new FileSystemAdapter(VAULT);
+    const parent = new TFolder('Work/Projects');
+    const file = new TFile('Work/Projects/todo.md', parent);
+    expect(getTargetPath({ adapter } as never, file as never)).toBe(
+      'E:\\My Vault\\Work\\Projects',
+    );
+  });
+
+  it('resolves the parent folder path for a TFile without parent reference using path parsing', () => {
+    const adapter = new FileSystemAdapter(VAULT);
+    const file = new TFile('Notes/Personal/diary.md');
+    expect(getTargetPath({ adapter } as never, file as never)).toBe(
+      'E:\\My Vault\\Notes\\Personal',
+    );
+  });
+
+  it('resolves the vault root for a root-level TFile', () => {
+    const adapter = new FileSystemAdapter(VAULT);
+    const file = new TFile('root-note.md');
+    expect(getTargetPath({ adapter } as never, file as never)).toBe(VAULT);
+  });
+
+  it('returns null for nullish or invalid targets', () => {
+    const adapter = new FileSystemAdapter(VAULT);
+    expect(getTargetPath({ adapter } as never, null)).toBeNull();
+    expect(getTargetPath({ adapter } as never, undefined)).toBeNull();
+    expect(getTargetPath({ adapter } as never, {} as never)).toBeNull();
   });
 });

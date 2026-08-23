@@ -14,8 +14,6 @@ function runExecFile(
   return new Promise((resolve, reject) => {
     execFile(file, args, options, (error, stdout, _stderr) => {
       if (error !== null) {
-        // The review lint requires Promise rejection reasons to be Error
-        // instances (the reason is only swallowed by the caller anyway).
         reject(error instanceof Error ? error : new Error(String(error)));
         return;
       }

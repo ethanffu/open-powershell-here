@@ -1,24 +1,76 @@
 /* @settings
 
-name: Open PowerShell Here
+name: Open Terminal Here
 id: open-powershell-here
 settings:
     -
-        id: hide-vault-powershell-ribbon
+        id: ribbon-section
+        title: Ribbon Button
+        type: heading
+        level: 1
+    -
+        id: hide-vault-terminal-ribbon
         title: Hide the ribbon button
-        description: 'Hide the "Open PowerShell at vault root" button in the left ribbon. The single-folder context-menu entry is unaffected.'
+        description: 'Hide the "Open Terminal at vault root" button from the left ribbon. The context-menu entry is unaffected.'
         type: class-toggle
+    -
+        id: terminal-ribbon-color
+        title: Ribbon icon color
+        description: 'Custom color for the terminal ribbon button.'
+        type: variable-color
+        format: hex
+        default: ''
+    -
+        id: terminal-selection-section
+        title: Terminal Selection (Linux)
+        type: heading
+        level: 1
+    -
+        id: terminal-choice
+        title: Preferred Terminal
+        description: 'Choose which terminal emulator to use when multiple terminals are installed on Linux.'
+        type: class-select
+        default: terminal-choice-auto
+        options:
+            -
+                label: 'Auto-detect (Default)'
+                value: terminal-choice-auto
+            -
+                label: 'Ghostty'
+                value: terminal-choice-ghostty
+            -
+                label: 'Konsole'
+                value: terminal-choice-konsole
+            -
+                label: 'Alacritty'
+                value: terminal-choice-alacritty
+            -
+                label: 'Kitty'
+                value: terminal-choice-kitty
+            -
+                label: 'WezTerm'
+                value: terminal-choice-wezterm
+            -
+                label: 'GNOME Terminal'
+                value: terminal-choice-gnome
+            -
+                label: 'XFCE4 Terminal'
+                value: terminal-choice-xfce4
+            -
+                label: 'Foot'
+                value: terminal-choice-foot
 
 */
 
-/* IMPORTANT: for class-toggle, Style Settings applies the SETTING ID (not
-   `addClass`, which is ignored) as the class on <body>. Keep this selector
-   in sync with HIDE_RIBBON_BODY_CLASS in src/main.ts — main.ts also
-   enforces the hide via inline style (MutationObserver on body class), so
-   hiding works even if the ribbon DOM/theme CSS changes. Specificity
-   (.workspace-ribbon) is used instead of !important to satisfy the CSS
-   review lint. */
+/* 1. Hide the ribbon button (Style Settings class toggle) */
+body.hide-vault-terminal-ribbon .workspace-ribbon .vault-terminal-ribbon,
 body.hide-vault-powershell-ribbon .workspace-ribbon .vault-powershell-ribbon,
-body.hide-vault-powershell-ribbon .workspace-ribbon .clickable-icon[aria-label="Open PowerShell at vault root"] {
+body.hide-vault-terminal-ribbon .workspace-ribbon .clickable-icon[aria-label*="Open"][aria-label*="at vault root"],
+body.hide-vault-powershell-ribbon .workspace-ribbon .clickable-icon[aria-label*="Open"][aria-label*="at vault root"] {
   display: none;
+}
+
+/* 2. Ribbon icon custom color */
+body .workspace-ribbon .vault-terminal-ribbon svg {
+  color: var(--terminal-ribbon-color, inherit);
 }

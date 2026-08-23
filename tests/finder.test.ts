@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { PowerShellFinder } from '../src/powershell/finder';
-import type { Candidate } from '../src/powershell/candidates';
+import { PowerShellFinder } from '../src/terminals/windows/finder';
+import type { Candidate } from '../src/terminals/windows/candidates';
 
 function candidatesOf(...paths: string[]): Candidate[] {
   return paths.map((path, i) => ({ path, source: `source-${i}` as Candidate['source'] }));
@@ -19,8 +19,10 @@ describe('PowerShellFinder', () => {
       probeMajorVersion: probe,
     });
     await expect(finder.resolve()).resolves.toEqual({
-      path: 'C:\\ok\\pwsh.exe',
-      majorVersion: 7,
+      id: 'powershell',
+      displayName: 'PowerShell',
+      binaryPath: 'C:\\ok\\pwsh.exe',
+      extra: { majorVersion: 7 },
     });
     expect(probe).toHaveBeenCalledTimes(2);
     expect(probe).toHaveBeenNthCalledWith(1, 'C:\\missing\\pwsh.exe');
@@ -30,15 +32,17 @@ describe('PowerShellFinder', () => {
   it('rejects a PowerShell 6 first candidate and accepts the second', async () => {
     const probe: Probe = vi
       .fn()
-      .mockResolvedValueOnce(null) // major 6 is rejected by the probe -> null
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(7);
     const finder = new PowerShellFinder({
       buildCandidates: () => candidatesOf('C:\\ps6\\pwsh.exe', 'C:\\ps7\\pwsh.exe'),
       probeMajorVersion: probe,
     });
     await expect(finder.resolve()).resolves.toEqual({
-      path: 'C:\\ps7\\pwsh.exe',
-      majorVersion: 7,
+      id: 'powershell',
+      displayName: 'PowerShell',
+      binaryPath: 'C:\\ps7\\pwsh.exe',
+      extra: { majorVersion: 7 },
     });
   });
 
@@ -62,7 +66,13 @@ describe('PowerShellFinder', () => {
     const second = await finder.resolve();
     expect(second).toEqual(first);
     expect(probe).toHaveBeenCalledTimes(1);
-    expect(finder.cached).toEqual({ path: 'C:\\pwsh.exe', majorVersion: 7 });
+    expect(finder.cached).toEqual({
+      id: 'powershell',
+      displayName: 'PowerShell',
+      binaryPath: 'C:\\pwsh.exe',
+      extra: { majorVersion: 7 },
+    });
+    expect(finder.verifiedPowerShell).toEqual({ path: 'C:\\pwsh.exe', majorVersion: 7 });
   });
 
   it('re-verifies after invalidation (stale cache on ENOENT)', async () => {
@@ -97,7 +107,12 @@ describe('PowerShellFinder', () => {
     releaseProbe(7);
     const results = await Promise.all([first, second, third]);
     for (const result of results) {
-      expect(result).toEqual({ path: 'C:\\pwsh.exe', majorVersion: 7 });
+      expect(result).toEqual({
+        id: 'powershell',
+        displayName: 'PowerShell',
+        binaryPath: 'C:\\pwsh.exe',
+        extra: { majorVersion: 7 },
+      });
     }
     expect(probe).toHaveBeenCalledTimes(1);
   });
@@ -109,9 +124,13 @@ describe('PowerShellFinder', () => {
       probeMajorVersion: probe,
     });
     await finder.resolve();
-    // A new resolution after the lock was released must not re-probe (cached).
     const again = finder.resolve();
-    await expect(again).resolves.toEqual({ path: 'C:\\pwsh.exe', majorVersion: 7 });
+    await expect(again).resolves.toEqual({
+      id: 'powershell',
+      displayName: 'PowerShell',
+      binaryPath: 'C:\\pwsh.exe',
+      extra: { majorVersion: 7 },
+    });
     expect(probe).toHaveBeenCalledTimes(1);
   });
 
