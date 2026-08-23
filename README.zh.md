@@ -1,4 +1,4 @@
-# Open Terminal Here
+# Native Terminal Here
 
 [English](README.md)
 
@@ -48,7 +48,7 @@
 
 ### 方式一：应用内市场安装（推荐）
 1. 打开 Obsidian **设置** → **第三方插件** → **浏览**。
-2. 搜索 **Open Terminal Here** 并点击 **安装**，随后 **启用** 即可。
+2. 搜索 **Native Terminal Here** 并点击 **安装**，随后 **启用** 即可。
 
 ### 方式二：手动安装
 1. 从 [Releases 页面](https://github.com/ethanffu/open-powershell-here/releases) 下载 `main.js`、`manifest.json` 与 `styles.css`。

@@ -1,4 +1,4 @@
-# Open Terminal Here
+# Native Terminal Here
 
 [简体中文](README.zh.md)
 
@@ -48,7 +48,7 @@ If you use the [Style Settings](https://obsidian.md/plugins?id=obsidian-style-se
 
 ### Option 1: Community Plugins (Recommended)
 1. Open Obsidian **Settings** → **Community plugins** → **Browse**.
-2. Search for **Open Terminal Here** and click **Install**, then **Enable**.
+2. Search for **Native Terminal Here** and click **Install**, then **Enable**.
 
 ### Option 2: Manual Installation
 1. Download `main.js`, `manifest.json`, and `styles.css` from the [Releases page](https://github.com/ethanffu/open-powershell-here/releases).
